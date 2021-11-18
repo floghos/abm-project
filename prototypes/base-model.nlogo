@@ -32,7 +32,7 @@ to setup
   set clock-m 00
 
   set days 0
-  create-people 1000 [
+  create-people n-agents [
     set id who
     set state 0
     set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
@@ -198,10 +198,10 @@ NIL
 1
 
 BUTTON
-240
-10
-333
-43
+622
+71
+715
+104
 enter-container
 enter-container id-agente id-contenedor
 NIL
@@ -215,10 +215,10 @@ NIL
 1
 
 BUTTON
-240
-45
-333
-78
+622
+106
+715
+139
 leave-container
 leave-container id-agente
 NIL
@@ -232,10 +232,10 @@ NIL
 1
 
 INPUTBOX
-72
-11
-139
-71
+562
+10
+629
+70
 id-agente
 6.0
 1
@@ -243,10 +243,10 @@ id-agente
 Number
 
 INPUTBOX
-144
-11
-232
-71
+629
+10
+717
+70
 id-contenedor
 2.0
 1
@@ -313,6 +313,17 @@ days
 17
 1
 11
+
+INPUTBOX
+72
+10
+128
+70
+n-agents
+0.0
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
