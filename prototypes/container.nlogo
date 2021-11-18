@@ -21,13 +21,14 @@ to setup
 end
 
 to go
-  ask turtles [
+  ask people [
     ;ifelse leave-trace?             ;; the turtle puts its pen up or down depending on the
     ;  [ pen-down ]                  ;;   value of the LEAVE-TRACE? switch
     ;  [ pen-up ]
     bounce
     fd movespeed
   ]
+  ask people with [ state = 1 ] [ spread-disease ]
   tick
 end
 
@@ -47,12 +48,6 @@ to remove-agent [ _id ]
   ask people with [id = _id] [ die ]
 end
 
-to randomize
-  setxy random-xcor random-ycor
-  if pcolor = blue       ; if it's on the wall...
-    [ randomize ]        ; ...try again
-end
-
 to draw-walls
   ; draw left and right walls
   ask patches with [abs pxcor = max-pxcor]
@@ -63,7 +58,7 @@ to draw-walls
 end
 
 
-;; necesitamos pulir esta funcion
+;; quiero pulir esta funcion
 to bounce  ;; turtle procedure
   ; check: hitting left or right wall?
   if abs [pxcor] of patch-ahead 0.1 = max-pxcor
@@ -75,10 +70,22 @@ to bounce  ;; turtle procedure
     [ set heading (180 - heading) ]
 end
 
-to-report check-state-of-agent [ _id ]
-  ;; CAMBIAMOS ARTIFICIALMENTE EL ESTADO DEL AGENTE, PARA TESTS
-  ;ask people with [ id = _id ] [ set state 1 ] ;; SOLO PARA PRUEBAS, ELIMINAR ASAP
+to spread-disease ;; turtle procedure
+  ask other people-here [ maybe-get-sick ]
+end
 
+to maybe-get-sick ;; turtle procedure
+  ;; roll the dice and maybe get sick
+  if (state = 0) and (random 100 < infection-chance)
+    [ get-sick ]
+end
+
+;; set the appropriate variables to make this turtle sick
+to get-sick ;; turtle procedure
+  if state = 0 [ set state 1 ]
+end
+
+to-report check-state-of-agent [ _id ]
   let s [state] of people with [ id = _id ]
   ifelse ( empty? s ) [report -99] [
     ;print item 0 s
@@ -179,6 +186,21 @@ movespeed
 1
 0
 Number
+
+SLIDER
+0
+183
+140
+216
+infection-chance
+infection-chance
+0
+100
+12.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?

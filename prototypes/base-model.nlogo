@@ -28,15 +28,22 @@ people-own [
 to setup
   ls:reset
   clear-all
-  set clock-h 00
+  set clock-h 07
   set clock-m 00
-
+  let l (sqrt n-agents)
+  resize-world 0 l 0 l
   set days 0
-  create-people n-agents [
-    set id who
-    set state 0
-    set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
+  set-default-shape people "circle"
+
+  ask n-of n-agents patches [
+    sprout-people 1 [
+      set id who
+      set state 0
+      set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
+      color-agent
+    ]
   ]
+
   ls:create-interactive-models 3 "container.nlogo"
   ;ls:create-models 3 "container.nlogo"
   ;; generating routines
@@ -64,6 +71,7 @@ to go
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
+      color-agent
     ]
   ]
 
@@ -84,6 +92,12 @@ to update-clock
   set current-time clock-h * 100 + clock-m
 end
 
+to color-agent
+  if state = 0 [ set color 85 ]
+  if state = 1 [ set color 55 ]
+  if state = 2 [ set color 45 ]
+end
+
 to generate-routine
 end
 
@@ -92,6 +106,13 @@ to follow-routine
     leave-container ([id] of self)
     enter-container ([id] of self) (item routine-index routine-place)
     set routine-index (routine-index + 1) mod length routine-time
+  ]
+end
+
+to seed-infection
+  ask one-of people [
+    set state 1
+    color-agent
   ]
 end
 
@@ -137,13 +158,13 @@ to leave-container [ agent-id ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-336
+230
 10
-492
-167
+381
+162
 -1
 -1
-13.5
+13.0
 1
 10
 1
@@ -153,10 +174,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--5
-5
--5
-5
+0
+10
+0
+10
 0
 0
 1
@@ -198,9 +219,9 @@ NIL
 1
 
 BUTTON
-622
+542
 71
-715
+635
 104
 enter-container
 enter-container id-agente id-contenedor
@@ -215,9 +236,9 @@ NIL
 1
 
 BUTTON
-622
+542
 106
-715
+635
 139
 leave-container
 leave-container id-agente
@@ -232,9 +253,9 @@ NIL
 1
 
 INPUTBOX
-562
+482
 10
-629
+549
 70
 id-agente
 6.0
@@ -243,9 +264,9 @@ id-agente
 Number
 
 INPUTBOX
-629
+549
 10
-717
+637
 70
 id-contenedor
 2.0
@@ -254,9 +275,9 @@ id-contenedor
 Number
 
 MONITOR
-74
+84
 76
-131
+141
 121
 NIL
 clock-h
@@ -265,9 +286,9 @@ clock-h
 11
 
 MONITOR
-131
+141
 76
-188
+198
 121
 NIL
 clock-m
@@ -293,9 +314,9 @@ NIL
 1
 
 MONITOR
-75
+85
 123
-149
+159
 168
 time
 clock-h * 100 + clock-m
@@ -304,9 +325,9 @@ clock-h * 100 + clock-m
 11
 
 MONITOR
-152
+162
 123
-209
+219
 168
 NIL
 days
@@ -320,10 +341,27 @@ INPUTBOX
 128
 70
 n-agents
-0.0
+100.0
 1
 0
 Number
+
+BUTTON
+0
+134
+83
+167
+NIL
+seed-infection
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
