@@ -1,36 +1,149 @@
-extensions [ls]
-
+extensions [
+  ls
+  ;time
+]
 
 breed [people person]
 
+globals [
+  clock-h
+  clock-m
+  current-time
+  days
+  ;dt
+]
 people-own [
   id
-  state
+  state ;; healthy/infected/recovered -> 0/1/2
+  age
+  routine-index
+  routine-time
+  routine-place
+  ;routine-horas [ 0800 0815 1730 1745 1900 1930 ]
+  ;rutina-lugares [ limbo trabajo limbo libre limbo casa]
+  location ;; id of the container the agent is currently on. -1 means limbo
+  time-infected ;; days since the agent got infected
 ]
 
 to setup
-  create-people 10 [
+  ls:reset
+  clear-all
+  set clock-h 00
+  set clock-m 00
+
+  set days 0
+  create-people 1000 [
     set id who
     set state 0
+    set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
   ]
   ls:create-interactive-models 3 "container.nlogo"
-  ls:ask ls:models [ setup ]
+  ;ls:create-models 3 "container.nlogo"
+  ;; generating routines
+  ask people [
+    set routine-index 0
+    set routine-time [ 0800 0815 1730 1745 1900 1930]
+    set routine-place [ -1 1 -1 0 -1 2]
+  ]
 
+  ;modelos 5%-> 0-2: supermercados
+  ls:ask 0 [ set movespeed 1 ]
+  ls:ask 1 [ set movespeed 0.5 ]
+  ls:ask 2 [ set movespeed 0.1 ]
+
+  ;modelos 3-20: hogares
+  ;modelos 21-26 lugares de trabajo
+  ;modelos 27-30: escuelas
+
+  ls:ask ls:models [ setup ]
+  reset-ticks
 end
 
 to go
+  update-clock
+  if (clock-m mod 15 = 0) [
+    ask people [
+      follow-routine
+    ]
+  ]
+
   ls:ask ls:models [ go ]
+  tick
 end
 
+to update-clock
+  set clock-m clock-m + 1
+  if clock-m = 60 [
+    set clock-m 0
+    set clock-h clock-h + 1
+  ]
+  if clock-h = 24 [
+    set clock-h 0
+    set days days + 1
+  ]
+  set current-time clock-h * 100 + clock-m
+end
+
+to generate-routine
+end
+
+to follow-routine
+  if (item routine-index routine-time) = current-time [
+    leave-container ([id] of self)
+    enter-container ([id] of self) (item routine-index routine-place)
+    set routine-index (routine-index + 1) mod length routine-time
+  ]
+end
+
+to follow-routine-viejo
+  (foreach routine-time routine-place [
+    [time place] ->
+    if time = current-time [
+      leave-container ([id] of self)
+      enter-container ([id] of self) (place)
+    ]
+  ])
+end
+
+to enter-container [ agent-id container-id ]
+  ;; container -1 es el "limbo".
+  ;; eventualmente podemos modelar el "limbo" como otro container
+  if container-id = -1 [ stop ]
+
+  ls:let _id agent-id
+  ls:let _state [state] of person agent-id
+  ls:ask container-id [
+    ;let _state [state] of person agent-id
+    insert-agent _id _state
+  ]
+  ask person agent-id [ set location container-id ]
+end
+
+to leave-container [ agent-id ]
+  ls:let _id agent-id
+  let container-id [location] of person agent-id
+  if container-id = -1 [ stop ]
+
+  ask person agent-id [
+    set state ls:report container-id [ check-state-of-agent _id ]
+    set location -1
+  ]
+
+  ls:ask container-id [
+    remove-agent _id
+  ]
+
+  ;print [state] of person agent-id
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+336
 10
-647
-448
+492
+167
 -1
 -1
-13.0
+13.5
 1
 10
 1
@@ -40,10 +153,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-5
+5
+-5
+5
 0
 0
 1
@@ -70,7 +183,7 @@ NIL
 BUTTON
 0
 62
-63
+60
 95
 NIL
 go
@@ -83,6 +196,123 @@ NIL
 NIL
 NIL
 1
+
+BUTTON
+240
+10
+333
+43
+enter-container
+enter-container id-agente id-contenedor
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+240
+45
+333
+78
+leave-container
+leave-container id-agente
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+INPUTBOX
+72
+11
+139
+71
+id-agente
+6.0
+1
+0
+Number
+
+INPUTBOX
+144
+11
+232
+71
+id-contenedor
+2.0
+1
+0
+Number
+
+MONITOR
+74
+76
+131
+121
+NIL
+clock-h
+0
+1
+11
+
+MONITOR
+131
+76
+188
+121
+NIL
+clock-m
+0
+1
+11
+
+BUTTON
+0
+98
+60
+131
+go-loop
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+75
+123
+149
+168
+time
+clock-h * 100 + clock-m
+0
+1
+11
+
+MONITOR
+152
+123
+209
+168
+NIL
+days
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?

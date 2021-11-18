@@ -14,8 +14,9 @@ to setup
   clear-all
   set-default-shape turtles "circle"
   draw-walls
-  create-turtles 5                      ;; create some turtles
-    [ randomize ]                       ;; place them randomly
+  ;create-turtles 5                      ;; create some turtles
+  ;  [ randomize ]                       ;; place them randomly
+
   reset-ticks
 end
 
@@ -25,14 +26,15 @@ to go
     ;  [ pen-down ]                  ;;   value of the LEAVE-TRACE? switch
     ;  [ pen-up ]
     bounce
-    fd 0.1
+    fd movespeed
   ]
   tick
 end
 
-to insert-agent [_id _state]
+to insert-agent [ _id _state ]
   create-people 1 [
     set id _id
+    set label _id
     set state _state
     set xcor random max-pxcor
     set ycor random max-pycor
@@ -74,22 +76,24 @@ to bounce  ;; turtle procedure
 end
 
 to-report check-state-of-agent [ _id ]
+  ;; CAMBIAMOS ARTIFICIALMENTE EL ESTADO DEL AGENTE, PARA TESTS
+  ;ask people with [ id = _id ] [ set state 1 ] ;; SOLO PARA PRUEBAS, ELIMINAR ASAP
+
   let s [state] of people with [ id = _id ]
   ifelse ( empty? s ) [report -99] [
-    print item 0 s
+    ;print item 0 s
     report item 0 s
   ]
 end
-
 @#$#@#$#@
 GRAPHICS-WINDOW
-203
+141
 10
-643
-451
+417
+287
 -1
 -1
-10.55
+6.54
 1
 10
 1
@@ -128,9 +132,9 @@ NIL
 
 INPUTBOX
 0
-91
+49
 60
-151
+109
 width
 40.0
 1
@@ -138,10 +142,10 @@ width
 Number
 
 INPUTBOX
-0
-150
-60
-210
+62
+48
+122
+108
 height
 40.0
 1
@@ -165,39 +169,16 @@ NIL
 NIL
 1
 
-BUTTON
+INPUTBOX
+3
+118
+73
+178
+movespeed
+1.0
+1
 0
-231
-120
-264
-NIL
-insert-agent 1 1
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-0
-283
-120
-316
-remove-agent n
-let n 1\nlet x check-state-of-agent n\nremove-agent n\n
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
