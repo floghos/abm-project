@@ -10,6 +10,8 @@ globals [
   clock-m
   current-time
   days
+  homes
+  public-places
   ;dt
 ]
 people-own [
@@ -35,28 +37,77 @@ to setup
   set days 0
   set-default-shape people "circle"
 
-  ask n-of n-agents patches [
-    sprout-people 1 [
-      set id who
-      set state 0
-      set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
-      color-agent
+;  ask n-of n-agents patches [
+;    sprout-people 1 [
+;      set id who
+;      set state 0
+;      set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
+;      color-agent
+;    ]
+;  ]
+
+  ;; Creating and populating homes
+  let counter n-agents ; counter keeps count of the number of agents that need to be created
+  set homes 0
+  while [ counter != 0 ] [
+    ;; Create a house
+    ls:create-interactive-models 1 "container.nlogo"
+    ;ls:create-models 3 "container.nlogo"
+
+    ;; houses will be small with prolonged interactions
+    ls:ask last ls:models [
+      set width 10
+      set height 10
+      set movespeed 0.1
     ]
+
+    set homes homes + 1
+
+    ;; Populate home with 1 - 4 people
+    let rand (random 4) + 1
+    set rand min (list rand counter) ; do not let rand be greater than the number of agents left to be created
+
+    ask n-of rand (patches with [ (count people-here) = 0 ]) [
+      sprout-people 1 [
+        set id who
+        set state 0
+        set location last ls:models ; this agent's home is the last container created
+        color-agent
+      ]
+    ]
+    set counter counter - rand
   ]
 
-  ls:create-interactive-models 3 "container.nlogo"
+  ;; Creating public spaces
+  set public-places 2
+  ls:create-interactive-models 1 "container.nlogo"
+  ls:ask last ls:models [
+    set width 40
+    set height 40
+    set movespeed 0.5
+  ]
+
+  ls:create-interactive-models 1 "container.nlogo"
+  ls:ask last ls:models [
+    set width 40
+    set height 40
+    set movespeed 1
+  ]
+
+  ;ls:create-interactive-models 3 "container.nlogo"
   ;ls:create-models 3 "container.nlogo"
+
+
   ;; generating routines
   ask people [
     set routine-index 0
+    ;generate-routine
     set routine-time [ 0800 0815 1730 1745 1900 1930]
     set routine-place [ -1 1 -1 0 -1 2]
   ]
 
-  ;modelos 5%-> 0-2: supermercados
-  ls:ask 0 [ set movespeed 1 ]
-  ls:ask 1 [ set movespeed 0.5 ]
-  ls:ask 2 [ set movespeed 0.1 ]
+  ;; reset locations
+  ask people [ set location -1 ]
 
   ;modelos 3-20: hogares
   ;modelos 21-26 lugares de trabajo
@@ -99,6 +150,8 @@ to color-agent
 end
 
 to generate-routine
+  ;set routine-time [ 0800 0815 1730 1745 1900 1930]
+  ;set routine-place [ -1 1 -1 0 -1 2]
 end
 
 to follow-routine
@@ -127,8 +180,8 @@ to follow-routine-viejo
 end
 
 to enter-container [ agent-id container-id ]
-  ;; container -1 es el "limbo".
-  ;; eventualmente podemos modelar el "limbo" como otro container
+  ;; container-id -1 representa el "limbo".
+  ;; eventualmente podemos modelar el "limbo" como un container propiamente tal.
   if container-id = -1 [ stop ]
 
   ls:let _id agent-id
@@ -141,9 +194,9 @@ to enter-container [ agent-id container-id ]
 end
 
 to leave-container [ agent-id ]
-  ls:let _id agent-id
   let container-id [location] of person agent-id
   if container-id = -1 [ stop ]
+  ls:let _id agent-id
 
   ask person agent-id [
     set state ls:report container-id [ check-state-of-agent _id ]
@@ -160,8 +213,8 @@ end
 GRAPHICS-WINDOW
 230
 10
-381
-162
+290
+71
 -1
 -1
 13.0
@@ -175,9 +228,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-10
+3
 0
-10
+3
 0
 0
 1
@@ -341,7 +394,7 @@ INPUTBOX
 128
 70
 n-agents
-100.0
+10.0
 1
 0
 Number
