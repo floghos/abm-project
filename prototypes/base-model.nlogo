@@ -30,7 +30,7 @@ people-own [
 to setup
   ls:reset
   clear-all
-  set clock-h 07
+  set clock-h 00
   set clock-m 00
   let l (sqrt n-agents)
   resize-world 0 l 0 l
@@ -101,9 +101,9 @@ to setup
   ;; generating routines
   ask people [
     set routine-index 0
-    ;generate-routine
-    set routine-time [ 0800 0815 1730 1745 1900 1930]
-    set routine-place [ -1 1 -1 0 -1 2]
+    generate-routine
+    ;set routine-time [ 0800 0815 1730 1745 1900 1930]
+    ;set routine-place [ -1 1 -1 0 -1 2]
   ]
 
   ;; reset locations
@@ -118,15 +118,15 @@ to setup
 end
 
 to go
-  update-clock
+
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
       color-agent
     ]
   ]
-
   ls:ask ls:models [ go ]
+  update-clock
   tick
 end
 
@@ -150,8 +150,40 @@ to color-agent
 end
 
 to generate-routine
-  ;set routine-time [ 0800 0815 1730 1745 1900 1930]
-  ;set routine-place [ -1 1 -1 0 -1 2]
+  ;posición 0 -> están en casa
+  ;posición 1 -> salen de la casa luego de 8 o más horas
+  let aux-time (800 + (100 * random (4)) + (random (4) * 15))
+  let aux-time2 100 * random (4)
+
+  set routine-time list aux-time2 (aux-time + aux-time2)
+  set routine-place list location (random (homes + public-places))
+
+  let tiempo-restante 2400 - aux-time - aux-time2
+  let tiempo-nuevo 0
+
+  while [tiempo-restante > 0 and aux-time > 0][
+    set aux-time ((100 * (random (4) + 1)) + (random (4) * 15))
+    set aux-time min (list aux-time tiempo-restante)
+    ;if (tiempo-restante < aux-time) [set aux-time tiempo-restante]
+
+    set tiempo-nuevo aux-time + last routine-time
+    if (tiempo-nuevo mod 100 >= 60)[
+      set tiempo-nuevo tiempo-nuevo - 60 + 100
+    ]
+
+    set routine-time lput tiempo-nuevo routine-time
+    set routine-place lput random (homes + public-places) routine-place
+
+    set tiempo-restante tiempo-restante - aux-time
+    let correccion 100 - (tiempo-restante mod 100)
+    set tiempo-restante tiempo-restante - (tiempo-restante mod 100) + 60 - correccion
+
+
+  ]
+  let aux-index length routine-time - 1
+  set routine-time remove-item aux-index routine-time
+  set routine-place remove-item aux-index routine-place
+
 end
 
 to follow-routine
@@ -406,6 +438,23 @@ BUTTON
 167
 NIL
 seed-infection
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+224
+133
+368
+166
+imrpime rutinas
+ask people [\n  generate-routine\n]
 NIL
 1
 T
