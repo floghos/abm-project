@@ -16,7 +16,7 @@ globals [
 ]
 people-own [
   id
-  state ;; healthy/infected/recovered -> 0/1/2
+  state ;; healthy/infected/recovered/dead -> 0/1/2/3
   age
   routine-index
   routine-time
@@ -51,8 +51,10 @@ to setup
   set homes 0
   while [ counter != 0 ] [
     ;; Create a house
-    ls:create-interactive-models 1 "container.nlogo"
-    ;ls:create-models 3 "container.nlogo"
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
 
     ;; houses will be small with prolonged interactions
     ls:ask last ls:models [
@@ -78,47 +80,60 @@ to setup
     set counter counter - rand
   ]
 
+
+
   ;; Creating public spaces
+
+
   set public-places 2
-  ls:create-interactive-models 1 "container.nlogo"
-  ls:ask last ls:models [
-    set width 40
-    set height 40
-    set movespeed 0.5
+  set counter public-places
+  while [ counter != 0 ] [
+    ;; Create a public space
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
+    ;; public spaces will be large with shorter interactions
+    ls:ask last ls:models [
+      set width 40
+      set height 40
+      ;; visualizador de distribucion normal
+      let spd random-normal 1 0.15
+      ifelse spd > 0 [ set movespeed spd ] [ set movespeed 0 ]
+    ]
+
+    set counter counter - 1
   ]
-
-  ls:create-interactive-models 1 "container.nlogo"
-  ls:ask last ls:models [
-    set width 40
-    set height 40
-    set movespeed 1
-  ]
-
-  ;ls:create-interactive-models 3 "container.nlogo"
-  ;ls:create-models 3 "container.nlogo"
-
+;  ls:create-interactive-models 1 "container.nlogo"
+;  ls:create-models 1 "container.nlogo"
+;  ls:ask last ls:models [
+;    set width 40
+;    set height 40
+;    set movespeed 0.5
+;  ]
+;
+;  ;ls:create-interactive-models 1 "container.nlogo"
+;  ls:create-models 1 "container.nlogo"
+;  ls:ask last ls:models [
+;    set width 40
+;    set height 40
+;    set movespeed 1
+;  ]
 
   ;; generating routines
   ask people [
     set routine-index 0
     generate-routine
-    ;set routine-time [ 0800 0815 1730 1745 1900 1930]
-    ;set routine-place [ -1 1 -1 0 -1 2]
+    ;old-routine
   ]
 
   ;; reset locations
   ask people [ set location -1 ]
-
-  ;modelos 3-20: hogares
-  ;modelos 21-26 lugares de trabajo
-  ;modelos 27-30: escuelas
-
   ls:ask ls:models [ setup ]
   reset-ticks
 end
 
 to go
-
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
@@ -144,9 +159,14 @@ to update-clock
 end
 
 to color-agent
-  if state = 0 [ set color 85 ]
-  if state = 1 [ set color 55 ]
-  if state = 2 [ set color 45 ]
+  if state = 0 [ set color color-healthy ]
+  if state = 1 [ set color color-infected ]
+  if state = 2 [ set color color-recovered ]
+end
+
+to old-routine
+  set routine-time [ 0800 0815 1730 1745 1900 1930 ]
+  set routine-place [ -1 1 -1 0 -1 2 ]
 end
 
 to generate-routine
@@ -177,12 +197,20 @@ to generate-routine
     set tiempo-restante tiempo-restante - aux-time
     let correccion 100 - (tiempo-restante mod 100)
     set tiempo-restante tiempo-restante - (tiempo-restante mod 100) + 60 - correccion
-
-
   ]
+
   let aux-index length routine-time - 1
   set routine-time remove-item aux-index routine-time
   set routine-place remove-item aux-index routine-place
+
+end
+
+to generate-routine-2
+  let h ceiling random-normal 48 4 ; time home, in "time slots" of 15 mins
+  let b 0
+  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ]
+  ;; free hours will be the remaining time
+
 
 end
 
@@ -195,9 +223,11 @@ to follow-routine
 end
 
 to seed-infection
-  ask one-of people [
-    set state 1
-    color-agent
+  if any? people [
+    ask one-of people [
+      set state 1
+      color-agent
+    ]
   ]
 end
 
@@ -243,10 +273,10 @@ to leave-container [ agent-id ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-230
+247
 10
-290
-71
+671
+435
 -1
 -1
 13.0
@@ -260,9 +290,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-3
+31
 0
-3
+31
 0
 0
 1
@@ -288,10 +318,10 @@ NIL
 
 BUTTON
 0
-62
-60
-95
-NIL
+103
+61
+136
+go-step
 go
 NIL
 1
@@ -303,67 +333,11 @@ NIL
 NIL
 1
 
-BUTTON
-542
-71
-635
-104
-enter-container
-enter-container id-agente id-contenedor
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-542
-106
-635
-139
-leave-container
-leave-container id-agente
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-INPUTBOX
-482
-10
-549
-70
-id-agente
-6.0
-1
-0
-Number
-
-INPUTBOX
-549
-10
-637
-70
-id-contenedor
-2.0
-1
-0
-Number
-
 MONITOR
-84
-76
-141
-121
+2
+210
+59
+255
 NIL
 clock-h
 0
@@ -371,10 +345,10 @@ clock-h
 11
 
 MONITOR
-141
-76
-198
-121
+59
+210
+116
+255
 NIL
 clock-m
 0
@@ -383,10 +357,10 @@ clock-m
 
 BUTTON
 0
-98
-60
-131
-go-loop
+137
+63
+170
+go
 go
 T
 1
@@ -399,10 +373,10 @@ NIL
 1
 
 MONITOR
-85
-123
-159
-168
+3
+257
+67
+302
 time
 clock-h * 100 + clock-m
 0
@@ -410,10 +384,10 @@ clock-h * 100 + clock-m
 11
 
 MONITOR
-162
-123
-219
-168
+68
+257
+125
+302
 NIL
 days
 17
@@ -421,21 +395,21 @@ days
 11
 
 INPUTBOX
-72
-10
-128
-70
+168
+55
+224
+115
 n-agents
-10.0
+1000.0
 1
 0
 Number
 
 BUTTON
 0
-134
-83
-167
+47
+78
+80
 NIL
 seed-infection
 NIL
@@ -449,10 +423,10 @@ NIL
 1
 
 BUTTON
-224
-133
-368
-166
+0
+171
+144
+204
 imrpime rutinas
 ask people [\n  generate-routine\n]
 NIL
@@ -464,6 +438,50 @@ NIL
 NIL
 NIL
 1
+
+SWITCH
+80
+10
+207
+43
+show-containers
+show-containers
+1
+1
+-1000
+
+INPUTBOX
+1
+573
+91
+633
+color-healthy
+88.0
+1
+0
+Color
+
+INPUTBOX
+95
+573
+183
+633
+color-infected
+66.0
+1
+0
+Color
+
+INPUTBOX
+186
+573
+276
+633
+color-recovered
+47.0
+1
+0
+Color
 
 @#$#@#$#@
 ## WHAT IS IT?
