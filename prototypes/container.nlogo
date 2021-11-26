@@ -7,6 +7,7 @@ breed [people person]
 people-own [
   id
   state
+  time-infected ;<-------NUEVO
 ]
 
 to setup
@@ -21,10 +22,12 @@ to setup
 end
 
 to go
+  update-infection ;<-------NUEVO
   ask people [
     ;ifelse leave-trace?             ;; the turtle puts its pen up or down depending on the
     ;  [ pen-down ]                  ;;   value of the LEAVE-TRACE? switch
     ;  [ pen-up ]
+    color-agent ;<-------NUEVO
     bounce
     fd movespeed
   ]
@@ -32,11 +35,12 @@ to go
   tick
 end
 
-to insert-agent [ _id _state ]
+to insert-agent [ _id _state _time-infected]
   create-people 1 [
     set id _id
     set label _id
     set state _state
+    set time-infected _time-infected ;<-------NUEVO
     set xcor random max-pxcor
     set ycor random max-pycor
   ]
@@ -91,6 +95,33 @@ to-report check-state-of-agent [ _id ]
     ;print item 0 s
     report item 0 s
   ]
+end
+
+to-report check-time-infected-of-agent [ _id ] ;<-------NUEVO
+  let t [time-infected] of people with [ id = _id ]
+  ifelse ( empty? t ) [report -99] [
+    ;print item 0 t
+    report item 0 t
+  ]
+end
+
+to update-infection ;<-------NUEVO
+  ask people [
+    if (state = 1 )[;infected
+      set time-infected time-infected + 1
+    ]
+
+    if (time-infected >= dias-para-recuperacion * 1440)[
+      set state 2
+      set time-infected 0
+    ]
+  ]
+end
+
+to color-agent ;<-------NUEVO
+  if state = 0 [ set color 85 ]
+  if state = 1 [ set color 55 ]
+  if state = 2 [ set color 45 ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -201,6 +232,17 @@ infection-chance
 1
 NIL
 HORIZONTAL
+
+INPUTBOX
+7
+221
+133
+281
+dias-para-recuperacion
+14.0
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?

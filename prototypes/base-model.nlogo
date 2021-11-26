@@ -48,6 +48,7 @@ to setup
 
   ;; Creating and populating homes
   let counter n-agents ; counter keeps count of the number of agents that need to be created
+  ls:let dias-recuperacion dias-para-recuperación ;<-------NUEVO
   set homes 0
   while [ counter != 0 ] [
     ;; Create a house
@@ -61,6 +62,7 @@ to setup
       set width 10
       set height 10
       set movespeed 0.1
+      set dias-para-recuperacion dias-recuperacion ;<-------NUEVO
     ]
 
     set homes homes + 1
@@ -74,6 +76,7 @@ to setup
         set id who
         set state 0
         set location last ls:models ; this agent's home is the last container created
+        set time-infected 0 ;<-------NUEVO
         color-agent
       ]
     ]
@@ -83,7 +86,6 @@ to setup
 
 
   ;; Creating public spaces
-
 
   set public-places 2
   set counter public-places
@@ -97,6 +99,7 @@ to setup
     ls:ask last ls:models [
       set width 40
       set height 40
+      set dias-para-recuperacion dias-recuperacion
       ;; visualizador de distribucion normal
       let spd random-normal 1 0.15
       ifelse spd > 0 [ set movespeed spd ] [ set movespeed 0 ]
@@ -104,27 +107,13 @@ to setup
 
     set counter counter - 1
   ]
-;  ls:create-interactive-models 1 "container.nlogo"
-;  ls:create-models 1 "container.nlogo"
-;  ls:ask last ls:models [
-;    set width 40
-;    set height 40
-;    set movespeed 0.5
-;  ]
-;
-;  ;ls:create-interactive-models 1 "container.nlogo"
-;  ls:create-models 1 "container.nlogo"
-;  ls:ask last ls:models [
-;    set width 40
-;    set height 40
-;    set movespeed 1
-;  ]
 
   ;; generating routines
   ask people [
     set routine-index 0
     generate-routine
     ;old-routine
+
   ]
 
   ;; reset locations
@@ -134,6 +123,7 @@ to setup
 end
 
 to go
+  update-infection ;<-------NUEVO
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
@@ -248,9 +238,10 @@ to enter-container [ agent-id container-id ]
 
   ls:let _id agent-id
   ls:let _state [state] of person agent-id
+  ls:let _time-infected [time-infected] of person agent-id ;<-------NUEVO
   ls:ask container-id [
     ;let _state [state] of person agent-id
-    insert-agent _id _state
+    insert-agent _id _state _time-infected ;<-------NUEVO
   ]
   ask person agent-id [ set location container-id ]
 end
@@ -262,6 +253,7 @@ to leave-container [ agent-id ]
 
   ask person agent-id [
     set state ls:report container-id [ check-state-of-agent _id ]
+    set time-infected ls:report container-id [check-time-infected-of-agent _id] ;<-------NUEVO
     set location -1
   ]
 
@@ -271,12 +263,25 @@ to leave-container [ agent-id ]
 
   ;print [state] of person agent-id
 end
+
+to update-infection  ;<-------NUEVO
+  ask people [
+    if (state = 1 )[;infected
+      set time-infected time-infected + 1
+    ]
+
+    if (time-infected >= dias-para-recuperación * 1440)[
+      set state 2
+      set time-infected 0
+    ]
+  ]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 247
 10
-671
-435
+277
+58
 -1
 -1
 13.0
@@ -290,9 +295,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-31
+2
 0
-31
+2
 0
 0
 1
@@ -400,7 +405,7 @@ INPUTBOX
 224
 115
 n-agents
-1000.0
+5.0
 1
 0
 Number
@@ -482,6 +487,20 @@ color-recovered
 1
 0
 Color
+SLIDER
+5
+175
+249
+208
+dias-para-recuperación
+dias-para-recuperación
+0
+100
+14.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
