@@ -280,7 +280,7 @@ end
 GRAPHICS-WINDOW
 247
 10
-277
+294
 58
 -1
 -1
@@ -400,10 +400,10 @@ days
 11
 
 INPUTBOX
-168
-55
-224
-115
+151
+47
+207
+107
 n-agents
 5.0
 1
@@ -487,11 +487,12 @@ color-recovered
 1
 0
 Color
+
 SLIDER
-5
-175
-249
-208
+0
+317
+204
+350
 dias-para-recuperación
 dias-para-recuperación
 0
