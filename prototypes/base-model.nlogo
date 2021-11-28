@@ -87,7 +87,7 @@ to setup
 
   ;; Creating public spaces
 
-  set public-places 2
+  set public-places cant-public-places
   set counter public-places
   while [ counter != 0 ] [
     ;; Create a public space
@@ -182,7 +182,10 @@ to generate-routine
     ]
 
     set routine-time lput tiempo-nuevo routine-time
-    set routine-place lput random (homes + public-places) routine-place
+    ifelse random-float 1 < 0.95 ; arbitrary chance of visiting a public place
+    [ set routine-place lput ((random public-places) + homes) routine-place ] ; visit random public place
+    [ set routine-place lput random (homes) routine-place ] ; visit a random house
+    ;set routine-place lput random (homes + public-places) routine-place
 
     set tiempo-restante tiempo-restante - aux-time
     let correccion 100 - (tiempo-restante mod 100)
@@ -196,11 +199,22 @@ to generate-routine
 end
 
 to generate-routine-2
+  let home-loc location
   let h ceiling random-normal 48 4 ; time home, in "time slots" of 15 mins
   let b 0
-  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ]
+  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ] ; time busy, separating students from workers
   ;; free hours will be the remaining time
 
+  ;; going to busy place
+  let b-h floor (b / 4)
+  let b-m (b mod 4)
+  let aux-hr random-normal 8 1
+  set routine-time lput (ceiling (aux-hr * 100)) routine-time
+  set routine-place lput ((random public-places) + homes) routine-place
+
+
+  let h-h floor (h / 4)
+  let h-m (h mod 4)
 
 end
 
@@ -280,8 +294,8 @@ end
 GRAPHICS-WINDOW
 247
 10
-294
-58
+307
+71
 -1
 -1
 13.0
@@ -295,9 +309,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-2
+3
 0
-2
+3
 0
 0
 1
@@ -405,7 +419,7 @@ INPUTBOX
 207
 107
 n-agents
-5.0
+10.0
 1
 0
 Number
@@ -451,7 +465,7 @@ SWITCH
 43
 show-containers
 show-containers
-1
+0
 1
 -1000
 
@@ -502,6 +516,17 @@ dias-para-recuperación
 1
 NIL
 HORIZONTAL
+
+INPUTBOX
+135
+112
+240
+172
+cant-public-places
+0.0
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
