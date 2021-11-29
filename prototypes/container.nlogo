@@ -80,7 +80,7 @@ end
 
 to maybe-get-sick ;; turtle procedure
   ;; roll the dice and maybe get sick
-  if (state = 0) and (random 100 < infection-chance)
+  if (state = 0) and (random-float 1 < infection-chance)
     [ get-sick ]
 end
 
@@ -226,9 +226,9 @@ SLIDER
 infection-chance
 infection-chance
 0
-100
-12.0
 1
+0.12
+0.01
 1
 NIL
 HORIZONTAL
