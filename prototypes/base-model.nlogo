@@ -12,8 +12,11 @@ globals [
   days
   homes
   public-places
+  work-places
+  schools
   ;dt
 ]
+
 people-own [
   id
   state ;; healthy/infected/recovered/dead -> 0/1/2/3
@@ -36,87 +39,26 @@ to setup
   resize-world 0 l 0 l
   set days 0
   set-default-shape people "circle"
+  set public-places num-public-places
+  set work-places num-work-places
+  set schools num-schools
 
-;  ask n-of n-agents patches [
-;    sprout-people 1 [
-;      set id who
-;      set state 0
-;      set location -1 ; <- OJO: la posicion inicial de cada agente la da la rutina
-;      color-agent
-;    ]
-;  ]
-
-  ;; Creating and populating homes
-  let counter n-agents ; counter keeps count of the number of agents that need to be created
-  ls:let dias-recuperacion dias-para-recuperación ;<-------NUEVO
-  set homes 0
-  while [ counter != 0 ] [
-    ;; Create a house
-    ifelse show-containers
-    [ ls:create-interactive-models 1 "container.nlogo" ]
-    [ ls:create-models 1 "container.nlogo" ]
-
-
-    ;; houses will be small with prolonged interactions
-    ls:ask last ls:models [
-      set width 10
-      set height 10
-      set movespeed 0.1
-      set dias-para-recuperacion dias-recuperacion ;<-------NUEVO
-    ]
-
-    set homes homes + 1
-
-    ;; Populate home with 1 - 4 people
-    let rand (random 4) + 1
-    set rand min (list rand counter) ; do not let rand be greater than the number of agents left to be created
-
-    ask n-of rand (patches with [ (count people-here) = 0 ]) [
-      sprout-people 1 [
-        set id who
-        set state 0
-        set location last ls:models ; this agent's home is the last container created
-        set time-infected 0 ;<-------NUEVO
-        color-agent
-      ]
-    ]
-    set counter counter - rand
-  ]
-
-
-
-  ;; Creating public spaces
-
-  set public-places cant-public-places
-  set counter public-places
-  while [ counter != 0 ] [
-    ;; Create a public space
-    ifelse show-containers
-    [ ls:create-interactive-models 1 "container.nlogo" ]
-    [ ls:create-models 1 "container.nlogo" ]
-
-    ;; public spaces will be large with shorter interactions
-    ls:ask last ls:models [
-      set width 40
-      set height 40
-      set dias-para-recuperacion dias-recuperacion
-      ;; visualizador de distribucion normal
-      let spd random-normal 1 0.15
-      ifelse spd > 0 [ set movespeed spd ] [ set movespeed 0 ]
-    ]
-
-    set counter counter - 1
-  ]
+  ;; ============ IMPORTANT ============
+  ;; The order in which container groups are created is important as their model-id is inferred from it
+  ;; Our convention is: Homes -> Public places -> Work places -> Schools
+  create-homes
+  create-public-places
+  create-work-places ; WIP
+  create-schools ; WIP
 
   ;; generating routines
   ask people [
     set routine-index 0
     generate-routine
     ;old-routine
-
   ]
 
-  ;; reset locations
+  ;; reset people's locations (currently they have their home as the default location)
   ask people [ set location -1 ]
   ls:ask ls:models [ setup ]
   reset-ticks
@@ -159,6 +101,77 @@ to old-routine
   set routine-place [ -1 1 -1 0 -1 2 ]
 end
 
+
+;; ============ Container creation procedures ============
+to create-homes
+  ;; Here we create the agents & home-containers toghether, to avoid leaving empty houses
+  let counter n-agents ; counter keeps count of the number of agents that need to be created
+  ls:let dias-recuperacion avg-recovery-time ;<-------NUEVO
+  set homes 0
+  while [ counter != 0 ] [
+    ;; Create a house
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
+    ;; houses will be small with prolonged interactions
+    ls:ask last ls:models [
+      set width 10
+      set height 10
+      set movespeed 0.1
+      set dias-para-recuperacion dias-recuperacion ;<-------NUEVO
+    ]
+
+    set homes homes + 1
+
+    ;; Populate home with 1 - 4 people
+    let rand (random 4) + 1
+    set rand min (list rand counter) ; do not let rand be greater than the number of agents left to be created
+
+    ask n-of rand (patches with [ (count people-here) = 0 ]) [
+      sprout-people 1 [
+        set id who
+        set state 0
+        set location last ls:models ; this agent's home is the last container created
+        set time-infected 0 ;<-------NUEVO
+        color-agent
+      ]
+    ]
+    set counter counter - rand
+  ]
+end
+
+to create-public-places
+  ;; Creating public places
+  let counter public-places
+  ls:let dias-recuperacion avg-recovery-time
+  while [ counter != 0 ] [
+    ;; Create a public space
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
+    ;; public spaces will be large with shorter interactions
+    ls:ask last ls:models [
+      set width 40
+      set height 40
+      set dias-para-recuperacion dias-recuperacion
+      ;; visualizador de distribucion normal
+      let spd random-normal 1 0.15
+      ifelse spd > 0 [ set movespeed spd ] [ set movespeed 0 ]
+    ]
+    set counter counter - 1
+  ]
+end
+
+to create-work-places
+end
+
+to create-schools
+end
+
+
+
 to generate-routine
   ;posición 0 -> están en casa
   ;posición 1 -> salen de la casa luego de 8 o más horas
@@ -183,7 +196,7 @@ to generate-routine
 
     set routine-time lput tiempo-nuevo routine-time
     ifelse random-float 1 < 0.95 ; arbitrary chance of visiting a public place
-    [ set routine-place lput ((random public-places) + homes) routine-place ] ; visit random public place
+    [ set routine-place lput get-rand-public routine-place ] ; visit random public place
     [ set routine-place lput random (homes) routine-place ] ; visit a random house
     ;set routine-place lput random (homes + public-places) routine-place
 
@@ -210,13 +223,32 @@ to generate-routine-2
   let b-m (b mod 4)
   let aux-hr random-normal 8 1
   set routine-time lput (ceiling (aux-hr * 100)) routine-time
-  set routine-place lput ((random public-places) + homes) routine-place
+  set routine-place lput get-rand-public routine-place
 
 
   let h-h floor (h / 4)
   let h-m (h mod 4)
 
 end
+
+to-report get-rand-home
+  report random homes
+end
+
+to-report get-rand-public
+  report homes + (random public-places)
+end
+
+to-report get-rand-work
+  report homes + public-places + (random work-places)
+end
+
+to-report get-rand-school
+  report homes + public-places + work-places + (random schools)
+end
+
+
+
 
 to follow-routine
   if (item routine-index routine-time) = current-time [
@@ -284,17 +316,32 @@ to update-infection  ;<-------NUEVO
       set time-infected time-infected + 1
     ]
 
-    if (time-infected >= dias-para-recuperación * 1440)[
+    if (time-infected >= avg-recovery-time * 1440)[
       set state 2
       set time-infected 0
     ]
   ]
 end
+
+;██████████▀▀▀▀▀▀▀▀▀▀▀▀▀██████████
+;█████▀▀░░░░░░░░░░░░░░░░░░░▀▀█████
+;███▀░░░░░░░░░░░░░░░░░░░░░░░░░▀███
+;██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░██
+;█░░░░░░▄▄▄▄▄▄░░░░░░░░▄▄▄▄▄▄░░░░░█
+;█░░░▄█████████░░░░░░██▀░░░▀██▄░░█
+;█░░░██████████░░░░░░█▄░░▀░░▄██░░█
+;██░░░▀▀██████░░░██░░░██▄▄▄█▀▀░░██
+;███░░░░░░▄▄▀░░░████░░░▀▄▄░░░░░███
+;██░░░░░█▄░░░░░░▀▀▀▀░░░░░░░█▄░░░██
+;██░░░▀▀█░█▀▄▄▄▄▄▄▄▄▄▄▄▄▄▀██▀▀░░██
+;███░░░░░▀█▄░░█░░█░░░█░░█▄▀░░░░███
+;████▄░░░░░░▀▀█▄▄█▄▄▄█▄▀▀░░░░▄████
+;███████▄▄▄▄░░░░░░░░░░░░▄▄▄███████
 @#$#@#$#@
 GRAPHICS-WINDOW
-247
+220
 10
-307
+280
 71
 -1
 -1
@@ -353,10 +400,10 @@ NIL
 1
 
 MONITOR
-2
-210
-59
-255
+0
+200
+57
+245
 NIL
 clock-h
 0
@@ -364,10 +411,10 @@ clock-h
 11
 
 MONITOR
-59
-210
-116
-255
+57
+200
+114
+245
 NIL
 clock-m
 0
@@ -392,10 +439,10 @@ NIL
 1
 
 MONITOR
-3
-257
-67
-302
+1
+247
+65
+292
 time
 clock-h * 100 + clock-m
 0
@@ -403,10 +450,10 @@ clock-h * 100 + clock-m
 11
 
 MONITOR
-68
-257
-125
-302
+66
+247
+123
+292
 NIL
 days
 17
@@ -414,10 +461,10 @@ days
 11
 
 INPUTBOX
-151
-47
-207
-107
+158
+46
+214
+106
 n-agents
 10.0
 1
@@ -426,9 +473,9 @@ Number
 
 BUTTON
 0
-47
+45
 78
-80
+78
 NIL
 seed-infection
 NIL
@@ -443,9 +490,9 @@ NIL
 
 BUTTON
 0
-171
+539
 144
-204
+572
 imrpime rutinas
 ask people [\n  generate-routine\n]
 NIL
@@ -459,9 +506,9 @@ NIL
 1
 
 SWITCH
-80
+86
 10
-207
+213
 43
 show-containers
 show-containers
@@ -503,10 +550,10 @@ color-recovered
 Color
 
 SLIDER
-0
-317
-204
-350
+153
+537
+325
+570
 dias-para-recuperación
 dias-para-recuperación
 0
@@ -518,15 +565,92 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-135
-112
-240
-172
-cant-public-places
+110
+109
+215
+169
+num-public-places
+2.0
+1
+0
+Number
+
+INPUTBOX
+122
+171
+215
+231
+num-work-places
 0.0
 1
 0
 Number
+
+SLIDER
+581
+68
+776
+101
+avg-incubation-period
+avg-incubation-period
+0
+20
+3.0
+1
+1
+Days
+HORIZONTAL
+
+SLIDER
+581
+34
+758
+67
+avg-recovery-time
+avg-recovery-time
+1
+50
+14.0
+1
+1
+Days
+HORIZONTAL
+
+TEXTBOX
+584
+10
+734
+28
+Infection Parameters
+14
+0.0
+1
+
+INPUTBOX
+140
+232
+215
+292
+num-schools
+0.0
+1
+0
+Number
+
+SLIDER
+581
+102
+767
+135
+base-transmition-chance
+base-transmition-chance
+0
+1
+0.12
+0.01
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
