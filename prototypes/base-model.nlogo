@@ -1,5 +1,6 @@
 extensions [
   ls
+  array
   ;time
 ]
 
@@ -200,22 +201,36 @@ end
 
 to generate-routine-2
   let home-loc location
-  let h ceiling random-normal 48 4 ; time home, in "time slots" of 15 mins
-  let b 0
-  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ] ; time busy, separating students from workers
-  ;; free hours will be the remaining time
+;  let h ceiling random-normal 48 4 ; time home, in "time slots" of 15 mins
+;  let b 0
+;  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ] ; time busy, separating students from workers
+;  ;; free hours will be the remaining time
+;
+;  ;; going to busy place
+;  let b-h floor (b / 4)
+;  let b-m (b mod 4)
+;  let aux-hr random-normal 8 1
+;  set routine-time lput (ceiling (aux-hr * 100)) routine-time
+;  set routine-place lput ((random public-places) + homes) routine-place
+;  let h-h floor (h / 4)
+;  let h-m (h mod 4)
+  let arr-t array:from-list n-values (3 + random 4) [0]
+  ; contains the times
 
-  ;; going to busy place
-  let b-h floor (b / 4)
-  let b-m (b mod 4)
-  let aux-hr random-normal 8 1
-  set routine-time lput (ceiling (aux-hr * 100)) routine-time
-  set routine-place lput ((random public-places) + homes) routine-place
+  let arr-p array:from-list n-values (array:length arr-t) [-2]
+  ; contains the places, need to initialize slots with "free" time place
 
+  array:set arr-p 0 location ; routine starts by sending the agent home
+  array:set arr-t 0 90 ; time measured in "time slots".
+  ;; "Time slots" are windows of time of 15 mins each
+  ;; time slot 90 corresponds to 22:30
 
-  let h-h floor (h / 4)
-  let h-m (h mod 4)
-
+  ; then give a random slot in the array a work place
+;  foreach n-values (array:length arr-t) [ i -> i ]
+;  [ i ->
+;    array:set arr-t i 0
+;    array:set arr-p i home-loc
+;  ]
 end
 
 to follow-routine
