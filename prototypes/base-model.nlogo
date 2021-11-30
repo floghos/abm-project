@@ -115,12 +115,8 @@ to create-homes
     [ ls:create-models 1 "container.nlogo" ]
 
     ;; houses will be small with prolonged interactions
-    ls:ask last ls:models [
-      set width 10
-      set height 10
-      set movespeed 0.1
-      set dias-para-recuperacion dias-recuperacion ;<-------NUEVO
-    ]
+    ;; container-settings width height recovery-time speed transmition-chance
+    container-settings 10 10 avg-recovery-time 0.1 base-transmition-chance
 
     set homes homes + 1
 
@@ -152,14 +148,8 @@ to create-public-places
     [ ls:create-models 1 "container.nlogo" ]
 
     ;; public spaces will be large with shorter interactions
-    ls:ask last ls:models [
-      set width 40
-      set height 40
-      set dias-para-recuperacion dias-recuperacion
-      ;; visualizador de distribucion normal
-      let spd random-normal 1 0.15
-      ifelse spd > 0 [ set movespeed spd ] [ set movespeed 0 ]
-    ]
+    ;; container-settings width height recovery-time speed transmition-chance
+    container-settings 40 40 avg-recovery-time (random-normal 1 0.15) base-transmition-chance
     set counter counter - 1
   ]
 end
@@ -170,6 +160,15 @@ end
 to create-schools
 end
 
+to container-settings [ w h recov-time speed infec-chance ]
+  ls:assign last ls:models width w
+  ls:assign last ls:models height h
+  ls:assign last ls:models dias-para-recuperacion recov-time
+  ifelse speed > 0
+  [ ls:assign last ls:models movespeed speed ]
+  [ ls:assign last ls:models movespeed 0 ]
+  ls:assign last ls:models infection-chance infec-chance
+end
 
 
 to generate-routine
