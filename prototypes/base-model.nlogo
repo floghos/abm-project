@@ -214,17 +214,9 @@ end
 to generate-routine-2
   let home-loc location
 
-<<<<<<< HEAD
-  ;; going to busy place
-  let b-h floor (b / 4)
-  let b-m (b mod 4)
-  let aux-hr random-normal 8 1
-  set routine-time lput (ceiling (aux-hr * 100)) routine-time
-  set routine-place lput get-rand-public routine-place
-=======
+
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
->>>>>>> new-routines
 
   let arr-p array:from-list n-values (array:length arr-t) [-2]
   ; contains the places, need to initialize slots with "free" time place
@@ -248,7 +240,7 @@ to generate-routine-2
   ; among the free window segments
 
   let random-index-close-to-the-start 0
-  array:set arr-p random-index-close-to-the-start get-random-work
+  array:set arr-p random-index-close-to-the-start get-rand-work
 
   let free-window-segment floor (free-time / (array:length arr-t - 2))
 
@@ -258,7 +250,6 @@ to generate-routine-2
   ]
 
   ;; Now we convert the ts in the time array to time in the military format
-
 
 
   ;; Finally we convert the arrays into lists, since no further changes should be done.
