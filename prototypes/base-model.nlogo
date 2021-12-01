@@ -201,36 +201,48 @@ end
 
 to generate-routine-2
   let home-loc location
-;  let h ceiling random-normal 48 4 ; time home, in "time slots" of 15 mins
-;  let b 0
-;  ifelse age >= 23 [ set b ceiling random-normal 36 4 ] [ set b ceiling random-normal 28 4 ] ; time busy, separating students from workers
-;  ;; free hours will be the remaining time
-;
-;  ;; going to busy place
-;  let b-h floor (b / 4)
-;  let b-m (b mod 4)
-;  let aux-hr random-normal 8 1
-;  set routine-time lput (ceiling (aux-hr * 100)) routine-time
-;  set routine-place lput ((random public-places) + homes) routine-place
-;  let h-h floor (h / 4)
-;  let h-m (h mod 4)
+
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
 
   let arr-p array:from-list n-values (array:length arr-t) [-2]
   ; contains the places, need to initialize slots with "free" time place
 
-  array:set arr-p 0 location ; routine starts by sending the agent home
-  array:set arr-t 0 90 ; time measured in "time slots".
-  ;; "Time slots" are windows of time of 15 mins each
+  ;; "Time slots" (ts) are windows of time of 15 mins each
+  array:set arr-p (array:length arr-p - 1) home-loc ; routine ends by sending the agent home
+  array:set arr-t (array:length arr-p - 1) (floor random-normal 90 1.8) ; time measured in "time slots".
   ;; time slot 90 corresponds to 22:30
 
-  ; then give a random slot in the array a work place
-;  foreach n-values (array:length arr-t) [ i -> i ]
-;  [ i ->
-;    array:set arr-t i 0
-;    array:set arr-p i home-loc
-;  ]
+  ;; A day has 96 time slots. (24 hrs * 4 slots of 15 mins each)
+  let free-time 96
+
+  ; An agent should get around 8 hrs of sleep
+  let home-time (floor random-normal 32 1.8)
+  set free-time free-time - home-time
+
+  ; 9 hrs (36 ts) of work for adults, 7 hrs (28 ts) of school for students
+  let work-time (floor random-normal 36 1.8)
+  set free-time free-time - work-time
+  ; whatever remaining ts are left will be free time, split evenly
+  ; among the free window segments
+
+  let random-index-close-to-the-start 0
+  array:set arr-p random-index-close-to-the-start get-random-work
+
+  let free-window-segment floor (free-time / (array:length arr-t - 2))
+
+  foreach n-values (array:length arr-t) [ i -> i ]
+  [ i ->
+    if array:item arr-p i = -2 [ array:set arr-t i free-window-segment ]
+  ]
+
+  ;; Now we convert the ts in the time array to time in the military format
+
+
+
+  ;; Finally we convert the arrays into lists, since no further changes should be done.
+  set routine-place array:to-list arr-p
+  set routine-time array:to-list arr-t
 end
 
 to follow-routine
