@@ -66,7 +66,7 @@ to setup
 end
 
 to go
-  update-infection ;<-------NUEVO
+  update-infection
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
@@ -107,7 +107,7 @@ end
 to create-homes
   ;; Here we create the agents & home-containers toghether, to avoid leaving empty houses
   let counter n-agents ; counter keeps count of the number of agents that need to be created
-  ls:let dias-recuperacion avg-recovery-time ;<-------NUEVO
+  ls:let dias-recuperacion avg-recovery-time
   set homes 0
   while [ counter != 0 ] [
     ;; Create a house
@@ -130,7 +130,7 @@ to create-homes
         set id who
         set state 0
         set location last ls:models ; this agent's home is the last container created
-        set time-infected 0 ;<-------NUEVO
+        set time-infected 0
         color-agent
       ]
     ]
@@ -156,6 +156,20 @@ to create-public-places
 end
 
 to create-work-places
+  ;; Creating work places
+  let counter work-places
+  ls:let dias-recuperacion avg-recovery-time
+  while [ counter != 0 ] [
+    ;; Create a work space
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
+    ;; work spaces will be large with longer interactions
+    ;; container-settings width height recovery-time speed transmition-chance
+    container-settings 40 40 avg-recovery-time (0.2) base-transmition-chance
+    set counter counter - 1
+  ]
 end
 
 to create-schools
@@ -221,9 +235,11 @@ to generate-routine-2
   let arr-p array:from-list n-values (array:length arr-t) [-2]
   ; contains the places, need to initialize slots with "free" time place
 
+  let len array:length arr-p
+
   ;; "Time slots" (ts) are windows of time of 15 mins each
-  array:set arr-p (array:length arr-p - 1) home-loc ; routine ends by sending the agent home
-  array:set arr-t (array:length arr-p - 1) ((floor random-normal 90 1.8) mod 96) ; time measured in "time slots".
+  array:set arr-p (len - 1) home-loc ; routine ends by sending the agent home
+  array:set arr-t (len - 1) ((floor random-normal 90 1.8) mod 96) ; time measured in "time slots".
   ;; time slot 90 corresponds to 22:30
 
   ;; A day has 96 time slots. (24 hrs * 4 slots of 15 mins each)
@@ -243,19 +259,30 @@ to generate-routine-2
   ; (i.e: close to index 0)
   let random-index-close-to-the-start floor (abs random-normal 0 0.6)
   array:set arr-p random-index-close-to-the-start get-rand-work
-  array:set arr-t 0 array:item arr-t (array:length arr-p - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
+  ;array:set arr-t 0 array:item arr-t (len - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
 
 
-  let free-window-segment floor (free-time / (array:length arr-t - 2))
+  let free-window-segment floor (free-time / (len - 2))
 
   ; fill the remaining free windows with the "free time" tag (-2)
-  foreach n-values (array:length arr-t) [ i -> i ]
+  foreach n-values (len) [ i -> i ]
   [ i ->
-    if array:item arr-p i = -2 [  ]
+    ifelse array:item arr-p (i - 1)mod len = -2 [
+      array:set arr-t i (free-window-segment + array:item arr-t (i - 1)mod len)
+    ][
+      ifelse i = 0 [
+        array:set arr-t i (home-time + array:item arr-t (i - 1)mod len)
+      ][
+        array:set arr-t i (work-time + array:item arr-t (i - 1)mod len)
+      ]
+    ]
   ]
 
   ;; Now we convert the ts in the time array to time in the military format
-
+  foreach n-values (len) [i -> i]
+  [i ->
+    array:set arr-t i cambiar-formato-hora array:item arr-t i
+  ]
 
   ;; Finally we convert the arrays into lists, since no further changes should be done.
   set routine-place array:to-list arr-p
@@ -282,8 +309,16 @@ end
 to follow-routine
   ; manejar que hacer con el codigo -2
   if (item routine-index routine-time) = current-time [
-    leave-container ([id] of self)
-    enter-container ([id] of self) (item routine-index routine-place)
+    ifelse (item routine-index routine-place) = -2 [
+      let next-p get-rand-public
+      if (location != next-p)[
+        leave-container ([id] of self)
+        enter-container ([id] of self) (get-rand-public)
+      ]
+    ][
+      leave-container ([id] of self)
+      enter-container ([id] of self) (item routine-index routine-place)
+    ]
     set routine-index (routine-index + 1) mod length routine-time
   ]
 end
@@ -314,10 +349,10 @@ to enter-container [ agent-id container-id ]
 
   ls:let _id agent-id
   ls:let _state [state] of person agent-id
-  ls:let _time-infected [time-infected] of person agent-id ;<-------NUEVO
+  ls:let _time-infected [time-infected] of person agent-id
   ls:ask container-id [
     ;let _state [state] of person agent-id
-    insert-agent _id _state _time-infected ;<-------NUEVO
+    insert-agent _id _state _time-infected
   ]
   ask person agent-id [ set location container-id ]
 end
@@ -329,7 +364,7 @@ to leave-container [ agent-id ]
 
   ask person agent-id [
     set state ls:report container-id [ check-state-of-agent _id ]
-    set time-infected ls:report container-id [check-time-infected-of-agent _id] ;<-------NUEVO
+    set time-infected ls:report container-id [check-time-infected-of-agent _id]
     set location -1
   ]
 
@@ -340,7 +375,7 @@ to leave-container [ agent-id ]
   ;print [state] of person agent-id
 end
 
-to update-infection  ;<-------NUEVO
+to update-infection
   ask people [
     if (state = 1 )[;infected
       set time-infected time-infected + 1
@@ -351,6 +386,13 @@ to update-infection  ;<-------NUEVO
       set time-infected 0
     ]
   ]
+end
+
+to-report cambiar-formato-hora [hora]
+  let int-part int (hora / 4)
+  let dec-part (hora / 4) - int-part
+
+  report (int-part * 100) + (dec-part * 60)
 end
 
 ;██████████▀▀▀▀▀▀▀▀▀▀▀▀▀██████████
@@ -1009,7 +1051,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.0
+NetLogo 6.2.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
