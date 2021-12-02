@@ -570,10 +570,10 @@ NIL
 1
 
 BUTTON
-193
-332
-337
-365
+173
+325
+317
+358
 imrpime rutina
 ask one-of people [ print routine-place ]
 NIL
@@ -647,7 +647,7 @@ INPUTBOX
 215
 231
 num-work-places
-5.0
+3.0
 1
 0
 Number
