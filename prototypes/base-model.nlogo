@@ -28,6 +28,7 @@ people-own [
   ;routine-horas [ 0800 0815 1730 1745 1900 1930 ]
   ;rutina-lugares [ limbo trabajo limbo libre limbo casa]
   location ;; id of the container the agent is currently on. -1 means limbo
+  home-loc
   time-infected ;; days since the agent got infected
 ]
 
@@ -54,8 +55,8 @@ to setup
 
   ;; generating routines
   ask people [
-    set routine-index 0
-    generate-routine
+    ;set routine-index 0
+    generate-routine-2
     ;old-routine
   ]
 
@@ -97,11 +98,6 @@ to color-agent
   if state = 2 [ set color color-recovered ]
 end
 
-to old-routine
-  set routine-time [ 0800 0815 1730 1745 1900 1930 ]
-  set routine-place [ -1 1 -1 0 -1 2 ]
-end
-
 
 ;; ============ Container creation procedures ============
 to create-homes
@@ -114,12 +110,10 @@ to create-homes
     ifelse show-containers
     [ ls:create-interactive-models 1 "container.nlogo" ]
     [ ls:create-models 1 "container.nlogo" ]
-
+    set homes homes + 1
     ;; houses will be small with prolonged interactions
     ;; container-settings width height recovery-time speed transmition-chance
     container-settings 10 10 avg-recovery-time 0.1 base-transmition-chance
-
-    set homes homes + 1
 
     ;; Populate home with 1 - 4 people
     let rand (random 4) + 1
@@ -131,6 +125,7 @@ to create-homes
         set state 0
         set location last ls:models ; this agent's home is the last container created
         set time-infected 0
+        set home-loc last ls:models
         color-agent
       ]
     ]
@@ -167,7 +162,7 @@ to create-work-places
 
     ;; work spaces will be large with longer interactions
     ;; container-settings width height recovery-time speed transmition-chance
-    container-settings 40 40 avg-recovery-time (0.2) base-transmition-chance
+    container-settings 20 20 avg-recovery-time (0.2) base-transmition-chance
     set counter counter - 1
   ]
 end
@@ -186,8 +181,13 @@ to container-settings [ w h recov-time speed infec-chance ]
   ;ls:assign last ls:models dias de incahggoasfef askjfhaskjf
 end
 
+to old-routine
+  set routine-time [ 0800 0815 1730 1745 1900 1930 ]
+  set routine-place [ -1 1 -1 0 -1 2 ]
+end
 
 to generate-routine
+  set routine-index 0
   ;posición 0 -> están en casa
   ;posición 1 -> salen de la casa luego de 8 o más horas
   let aux-time (800 + (100 * random (4)) + (random (4) * 15))
@@ -227,15 +227,12 @@ to generate-routine
 end
 
 to generate-routine-2
-  let home-loc location
-
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
+  let len array:length arr-t
 
-  let arr-p array:from-list n-values (array:length arr-t) [-2]
+  let arr-p array:from-list n-values len [-2]
   ; contains the places, need to initialize slots with "free" time place
-
-  let len array:length arr-p
 
   ;; "Time slots" (ts) are windows of time of 15 mins each
   array:set arr-p (len - 1) home-loc ; routine ends by sending the agent home
@@ -267,13 +264,13 @@ to generate-routine-2
   ; fill the remaining free windows with the "free time" tag (-2)
   foreach n-values (len) [ i -> i ]
   [ i ->
-    ifelse array:item arr-p (i - 1)mod len = -2 [
-      array:set arr-t i (free-window-segment + array:item arr-t (i - 1)mod len)
+    ifelse array:item arr-p ((i - 1) mod len) = -2 [
+      array:set arr-t i (free-window-segment + (array:item arr-t ((i - 1) mod len)))
     ][
       ifelse i = 0 [
-        array:set arr-t i (home-time + array:item arr-t (i - 1)mod len)
+        array:set arr-t i (home-time + array:item arr-t ((i - 1) mod len))
       ][
-        array:set arr-t i (work-time + array:item arr-t (i - 1)mod len)
+        array:set arr-t i (work-time + array:item arr-t ((i - 1) mod len))
       ]
     ]
   ]
@@ -287,6 +284,7 @@ to generate-routine-2
   ;; Finally we convert the arrays into lists, since no further changes should be done.
   set routine-place array:to-list arr-p
   set routine-time array:to-list arr-t
+  set routine-index 0
 end
 
 to-report get-rand-home
@@ -307,17 +305,28 @@ end
 
 
 to follow-routine
-  ; manejar que hacer con el codigo -2
   if (item routine-index routine-time) = current-time [
-    ifelse (item routine-index routine-place) = -2 [
-      let next-p get-rand-public
-      if (location != next-p)[
+    ifelse (item routine-index routine-place) = -2 [ ; agent has free time
+      let next-p 0
+      ifelse random-float 1 < 0.5 [ ; chance to go home
+        set next-p home-loc
+      ][
+        ifelse random-float 1 < 0.8 [ ; chance to go to a public place
+          set next-p get-rand-public
+        ][
+          set next-p get-rand-home ; chance to go to someone else's house
+        ]
+      ]
+
+      if (location != next-p)[ ; only move the agent if the next place is different than current loc
         leave-container ([id] of self)
-        enter-container ([id] of self) (get-rand-public)
+        enter-container ([id] of self) (next-p)
       ]
     ][
-      leave-container ([id] of self)
-      enter-container ([id] of self) (item routine-index routine-place)
+      if (location != (item routine-index routine-place))[ ; only move the agent if the next place is different than current loc
+        leave-container ([id] of self)
+        enter-container ([id] of self) (item routine-index routine-place)
+      ]
     ]
     set routine-index (routine-index + 1) mod length routine-time
   ]
@@ -561,12 +570,12 @@ NIL
 1
 
 BUTTON
-0
-539
-144
-572
-imrpime rutinas
-ask people [\n  generate-routine\n]
+193
+332
+337
+365
+imrpime rutina
+ask one-of people [ print routine-place ]
 NIL
 1
 T
@@ -584,7 +593,7 @@ SWITCH
 43
 show-containers
 show-containers
-0
+1
 1
 -1000
 
@@ -638,7 +647,7 @@ INPUTBOX
 215
 231
 num-work-places
-0.0
+5.0
 1
 0
 Number
@@ -708,6 +717,62 @@ base-transmition-chance
 1
 NIL
 HORIZONTAL
+
+SLIDER
+0
+387
+172
+420
+chance-go-home
+chance-go-home
+0
+1
+0.5
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+420
+172
+453
+chance-go-out
+chance-go-out
+0
+1
+0.3
+0.1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+453
+172
+486
+chance-visit-friend
+chance-visit-friend
+0
+1
+0.0
+0.1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+218
+73
+275
+118
+NIL
+homes
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1051,7 +1116,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
