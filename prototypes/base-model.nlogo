@@ -49,7 +49,7 @@ to setup
   ;; Our convention is: Homes -> Public places -> Work places -> Schools
   create-homes
   create-public-places
-  create-work-places ; WIP
+  create-work-places ; WIP work in progress
   create-schools ; WIP
 
   ;; generating routines
@@ -169,6 +169,7 @@ to container-settings [ w h recov-time speed infec-chance ]
   [ ls:assign last ls:models movespeed speed ]
   [ ls:assign last ls:models movespeed 0 ]
   ls:assign last ls:models infection-chance infec-chance
+  ;ls:assign last ls:models dias de incahggoasfef askjfhaskjf
 end
 
 
@@ -214,7 +215,6 @@ end
 to generate-routine-2
   let home-loc location
 
-
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
 
@@ -223,7 +223,7 @@ to generate-routine-2
 
   ;; "Time slots" (ts) are windows of time of 15 mins each
   array:set arr-p (array:length arr-p - 1) home-loc ; routine ends by sending the agent home
-  array:set arr-t (array:length arr-p - 1) (floor random-normal 90 1.8) ; time measured in "time slots".
+  array:set arr-t (array:length arr-p - 1) ((floor random-normal 90 1.8) mod 96) ; time measured in "time slots".
   ;; time slot 90 corresponds to 22:30
 
   ;; A day has 96 time slots. (24 hrs * 4 slots of 15 mins each)
@@ -237,16 +237,21 @@ to generate-routine-2
   let work-time (floor random-normal 36 1.8)
   set free-time free-time - work-time
   ; whatever remaining ts are left will be free time, split evenly
-  ; among the free window segments
+  ; among the free window segments (should be around 18 ts on avg)
 
-  let random-index-close-to-the-start 0
+  ; dropping the "go to work" call anywhere in the array, hopefully somewhere close to after waking up
+  ; (i.e: close to index 0)
+  let random-index-close-to-the-start floor (abs random-normal 0 0.6)
   array:set arr-p random-index-close-to-the-start get-rand-work
+  array:set arr-t 0 array:item arr-t (array:length arr-p - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
+
 
   let free-window-segment floor (free-time / (array:length arr-t - 2))
 
+  ; fill the remaining free windows with the "free time" tag (-2)
   foreach n-values (array:length arr-t) [ i -> i ]
   [ i ->
-    if array:item arr-p i = -2 [ array:set arr-t i free-window-segment ]
+    if array:item arr-p i = -2 [  ]
   ]
 
   ;; Now we convert the ts in the time array to time in the military format
@@ -274,9 +279,8 @@ to-report get-rand-school
 end
 
 
-
-
 to follow-routine
+  ; manejar que hacer con el codigo -2
   if (item routine-index routine-time) = current-time [
     leave-container ([id] of self)
     enter-container ([id] of self) (item routine-index routine-place)
@@ -574,21 +578,6 @@ color-recovered
 1
 0
 Color
-
-SLIDER
-153
-537
-325
-570
-dias-para-recuperación
-dias-para-recuperación
-0
-100
-14.0
-1
-1
-NIL
-HORIZONTAL
 
 INPUTBOX
 110
