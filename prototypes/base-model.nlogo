@@ -243,7 +243,7 @@ to generate-routine-2
   let free-time 96
 
   ; An agent should get around 8 hrs of sleep
-  let home-time (floor random-normal 32 1.8)
+  let home-time (floor random-normal 36 1.8)
   set free-time free-time - home-time
 
   ; 9 hrs (36 ts) of work for adults, 7 hrs (28 ts) of school for students
@@ -265,12 +265,12 @@ to generate-routine-2
   foreach n-values (len) [ i -> i ]
   [ i ->
     ifelse array:item arr-p ((i - 1) mod len) = -2 [
-      array:set arr-t i (free-window-segment + (array:item arr-t ((i - 1) mod len)))
+      array:set arr-t i (free-window-segment + (array:item arr-t ((i - 1) mod len))) mod 96
     ][
       ifelse i = 0 [
-        array:set arr-t i (home-time + array:item arr-t ((i - 1) mod len))
+        array:set arr-t i (home-time + array:item arr-t ((i - 1) mod len)) mod 96
       ][
-        array:set arr-t i (work-time + array:item arr-t ((i - 1) mod len))
+        array:set arr-t i (work-time + array:item arr-t ((i - 1) mod len)) mod 96
       ]
     ]
   ]
@@ -422,8 +422,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-280
-71
+267
+58
 -1
 -1
 13.0
@@ -437,9 +437,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-3
+2
 0
-3
+2
 0
 0
 1
@@ -547,7 +547,7 @@ INPUTBOX
 214
 106
 n-agents
-10.0
+5.0
 1
 0
 Number
@@ -575,7 +575,7 @@ BUTTON
 317
 358
 imrpime rutina
-ask one-of people [ print routine-place ]
+ask one-of people [ \nprint routine-place \nprint routine-time\n]
 NIL
 1
 T
