@@ -123,6 +123,7 @@ to create-homes
       sprout-people 1 [
         set id who
         set state 0
+        set age 5 + abs (round random-normal 30 10)
         set location last ls:models ; this agent's home is the last container created
         set time-infected 0
         set home-loc last ls:models
@@ -168,6 +169,20 @@ to create-work-places
 end
 
 to create-schools
+  ;; Creating schools
+  let counter schools
+  ls:let dias-recuperacion avg-recovery-time
+  while [ counter != 0 ] [
+    ;; Create a school
+    ifelse show-containers
+    [ ls:create-interactive-models 1 "container.nlogo" ]
+    [ ls:create-models 1 "container.nlogo" ]
+
+    ;; schools will be large with longer interactions
+    ;; container-settings width height recovery-time speed transmition-chance
+    container-settings 30 30 avg-recovery-time (0.09) base-transmition-chance
+    set counter counter - 1
+  ]
 end
 
 to container-settings [ w h recov-time speed infec-chance ]
@@ -247,8 +262,16 @@ to generate-routine-2
   set free-time free-time - home-time
 
   ; 9 hrs (36 ts) of work for adults, 7 hrs (28 ts) of school for students
-  let work-time (floor random-normal 36 1.8)
-  set free-time free-time - work-time
+  let work-time 0
+  if [age] of self <= 23 [
+    set work-time (floor random-normal 28 1.8)
+    set free-time free-time - work-time
+  ]
+  if [age] of self >= 24 and [age] of self <= 60 [
+    set work-time (floor random-normal 36 1.8)
+    set free-time free-time - work-time
+  ]
+
   ; whatever remaining ts are left will be free time, split evenly
   ; among the free window segments (should be around 18 ts on avg)
 
@@ -422,8 +445,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-267
-58
+371
+162
 -1
 -1
 13.0
@@ -437,9 +460,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-2
+10
 0
-2
+10
 0
 0
 1
@@ -547,7 +570,7 @@ INPUTBOX
 214
 106
 n-agents
-5.0
+100.0
 1
 0
 Number
@@ -575,7 +598,7 @@ BUTTON
 317
 358
 imrpime rutina
-ask one-of people [ \nprint routine-place \nprint routine-time\n]
+ask people [ \nprint age\nprint routine-place \nprint routine-time\n]
 NIL
 1
 T
@@ -1116,7 +1139,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.0
+NetLogo 6.2.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
