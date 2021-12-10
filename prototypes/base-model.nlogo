@@ -35,6 +35,7 @@ people-own [
   location ;; id of the container the agent is currently on. -1 means limbo
   home-loc
   time-infected ;; days since the agent got infected
+  is-essential
 ]
 
 to setup
@@ -141,6 +142,7 @@ to create-homes
         set location last ls:models ; this agent's home is the last container created
         set time-infected 0
         set home-loc last ls:models
+        if (age >= 24) [set is-essential true]
         color-agent
       ]
     ]
@@ -255,6 +257,15 @@ to generate-routine-old
 
 end
 
+to mark-essentials
+  let contador 0
+  ask people [
+    set is-essential false
+    if (is-worker) [set contador contador + 1]
+  ]
+  ask n-of ceiling((percent-essentials / 100 ) * contador) people with [is-worker = true] [set is-essential true]
+end
+
 to generate-routine
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
@@ -349,6 +360,11 @@ end
 to follow-routine
   if (item routine-index routine-time) = current-time [
     ifelse (item routine-index routine-place) = -2 [ ; agent has free time
+      if(quarantine)[
+        leave-container ([id] of self)
+        enter-container ([id] of self) (home-loc)
+        stop
+      ]
       let next-p 0
       ; need to handle these chances in a better way
       ifelse random-float 1 < 0.5 [ ; chance to go home
@@ -368,12 +384,51 @@ to follow-routine
       ]
     ][
       if (location != (item routine-index routine-place))[ ; only move the agent if the next place is different than current loc
+        if(is-student)[ ;estudiantes
+          ifelse (online-clases) [
+            leave-container ([id] of self)
+            enter-container ([id] of self) (home-loc)
+          ][
+            leave-container ([id] of self)
+            enter-container ([id] of self) (item routine-index routine-place)
+          ]
+        ]
+        if(is-worker)[ ;trabajadores
+          ifelse (is-essential) [
+            leave-container ([id] of self)
+            enter-container ([id] of self) (item routine-index routine-place)
+          ][
+            leave-container ([id] of self)
+            enter-container ([id] of self) (home-loc)
+          ]
+        ]
+        ;abuelitos
         leave-container ([id] of self)
         enter-container ([id] of self) (item routine-index routine-place)
       ]
     ]
     set routine-index (routine-index + 1) mod length routine-time
   ]
+end
+
+to-report is-student
+   if [age] of self <= 23 [
+    report true
+  ]
+  if [age] of self >= 24 and [age] of self <= 60 [
+   report false
+  ]
+  report false
+end
+
+to-report is-worker
+   if [age] of self <= 23 [
+    report false
+  ]
+  if [age] of self >= 24 and [age] of self <= 60 [
+   report true
+  ]
+  report false
 end
 
 to seed-infection
@@ -435,6 +490,15 @@ to update-infection
   ]
 end
 
+to update-agent-state
+  ask people [
+    if (location != -1)[
+      ls:let _id id
+      set state ls:report location [check-state-of-agent _id]
+    ]
+  ]
+end
+
 to set-public-place-cap
   ls:let r public-place-capacity
   ls:ask public-list [ set capacity ceiling (r * max-pxcor * max-pycor) ]
@@ -448,7 +512,11 @@ to-report cambiar-formato-hora [hora]
 end
 
 to do-plots
-  if clock-h * 100 + clock-m = 0 [ daily-cases-plot ]
+  if clock-h * 100 + clock-m = 0 [
+    update-agent-state
+    daily-cases-plot
+    active-cases-plot
+  ]
 end
 
 to daily-cases-plot
@@ -462,6 +530,12 @@ to daily-cases-plot
   plotxy days new-total - total-cases
 
   set total-cases new-total
+end
+
+to active-cases-plot
+  let contador count people with [state = 1]
+  set-current-plot "active-cases"
+  plotxy days contador
 end
 
 ;██████████▀▀▀▀▀▀▀▀▀▀▀▀▀██████████
@@ -482,8 +556,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-644
-435
+371
+162
 -1
 -1
 13.0
@@ -497,9 +571,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-31
+10
 0
-31
+10
 0
 0
 1
@@ -607,7 +681,7 @@ INPUTBOX
 214
 106
 n-agents
-1000.0
+100.0
 1
 0
 Number
@@ -696,7 +770,7 @@ INPUTBOX
 215
 169
 num-public-places
-50.0
+10.0
 1
 0
 Number
@@ -707,7 +781,7 @@ INPUTBOX
 215
 231
 num-work-places
-100.0
+10.0
 1
 0
 Number
@@ -758,7 +832,7 @@ INPUTBOX
 215
 292
 num-schools
-5.0
+1.0
 1
 0
 Number
@@ -861,7 +935,7 @@ public-place-capacity
 public-place-capacity
 0
 1
-0.004
+0.005
 0.001
 1
 per m^2
@@ -908,6 +982,111 @@ MONITOR
 509
 aforo
 [capacity] ls:of one-of public-list
+17
+1
+11
+
+SWITCH
+26
+334
+177
+367
+online-clases
+online-clases
+0
+1
+-1000
+
+SLIDER
+2
+368
+211
+401
+percent-essentials
+percent-essentials
+0
+100
+50.0
+1
+1
+%
+HORIZONTAL
+
+BUTTON
+29
+406
+175
+439
+NIL
+mark-essentials
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SWITCH
+668
+347
+804
+380
+quarantine
+quarantine
+0
+1
+-1000
+
+PLOT
+925
+152
+1177
+342
+active-cases
+Days
+# cases
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" ""
+
+MONITOR
+667
+383
+752
+428
+estudiantes
+count people with [age <= 23]
+17
+1
+11
+
+MONITOR
+755
+383
+843
+428
+trabajadores
+count people with [age >= 24]
+17
+1
+11
+
+MONITOR
+799
+429
+876
+474
+esenciales
+count people with [is-essential = true]
 17
 1
 11
@@ -1254,7 +1433,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.0
+NetLogo 6.2.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
