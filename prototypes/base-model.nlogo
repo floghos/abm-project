@@ -15,6 +15,11 @@ globals [
   public-places
   work-places
   schools
+  home-list
+  public-list
+  work-list
+  school-list
+  total-cases
   ;dt
 ]
 
@@ -44,6 +49,7 @@ to setup
   set public-places num-public-places
   set work-places num-work-places
   set schools num-schools
+  set total-cases 0
 
   ;; ============ IMPORTANT ============
   ;; The order in which container groups are created is important as their model-id is inferred from it
@@ -53,10 +59,16 @@ to setup
   create-work-places ; WIP work in progress
   create-schools ; WIP
 
+  set home-list n-values homes [ i -> i ]
+  set public-list n-values public-places [ i -> i + homes]
+  set work-list n-values work-places [ i -> i + homes + public-places]
+  set school-list n-values schools [ i -> i + homes + public-places + work-places]
+
+
   ;; generating routines
   ask people [
     ;set routine-index 0
-    generate-routine-2
+    generate-routine
     ;old-routine
   ]
 
@@ -64,6 +76,7 @@ to setup
   ask people [ set location -1 ]
   ls:ask ls:models [ setup ]
   reset-ticks
+  do-plots
 end
 
 to go
@@ -76,6 +89,7 @@ to go
   ]
   ls:ask ls:models [ go ]
   update-clock
+  do-plots
   tick
 end
 
@@ -196,12 +210,12 @@ to container-settings [ w h recov-time speed infec-chance ]
   ;ls:assign last ls:models dias de incahggoasfef askjfhaskjf
 end
 
-to old-routine
+to custom-routine-example
   set routine-time [ 0800 0815 1730 1745 1900 1930 ]
-  set routine-place [ -1 1 -1 0 -1 2 ]
+  set routine-place [ -2 5 -2 -2 -2 2 ]
 end
 
-to generate-routine
+to generate-routine-old
   set routine-index 0
   ;posición 0 -> están en casa
   ;posición 1 -> salen de la casa luego de 8 o más horas
@@ -241,7 +255,7 @@ to generate-routine
 
 end
 
-to generate-routine-2
+to generate-routine
   let arr-t array:from-list n-values (3 + random 4) [0]
   ; contains the times
   let len array:length arr-t
@@ -281,6 +295,12 @@ to generate-routine-2
   array:set arr-p random-index-close-to-the-start get-rand-work
   ;array:set arr-t 0 array:item arr-t (len - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
 
+  if [age] of self <= 23 [ ; students shall always go to school in the morning
+    array:set arr-p 0 get-rand-school
+  ]
+  if [age] of self >= 24 and [age] of self <= 60 [ ; workers may have different schedules
+    array:set arr-p random-index-close-to-the-start get-rand-work
+  ]
 
   let free-window-segment floor (free-time / (len - 2))
 
@@ -311,31 +331,32 @@ to generate-routine-2
 end
 
 to-report get-rand-home
-  report random homes
+  report one-of home-list
 end
 
 to-report get-rand-public
-  report homes + (random public-places)
+  report one-of public-list
 end
 
 to-report get-rand-work
-  report homes + public-places + (random work-places)
+  report one-of work-list
 end
 
 to-report get-rand-school
-  report homes + public-places + work-places + (random schools)
+  report one-of school-list
 end
-
 
 to follow-routine
   if (item routine-index routine-time) = current-time [
     ifelse (item routine-index routine-place) = -2 [ ; agent has free time
       let next-p 0
+      ; need to handle these chances in a better way
       ifelse random-float 1 < 0.5 [ ; chance to go home
         set next-p home-loc
       ][
         ifelse random-float 1 < 0.8 [ ; chance to go to a public place
           set next-p get-rand-public
+          if [is-open] ls:of next-p = false [ set next-p home-loc ]
         ][
           set next-p get-rand-home ; chance to go to someone else's house
         ]
@@ -358,20 +379,14 @@ end
 to seed-infection
   if any? people [
     ask one-of people [
+      ls:let _id id
       set state 1
       color-agent
+      if location != -1 [
+        ls:ask location [ infect-agent _id ]
+      ]
     ]
   ]
-end
-
-to follow-routine-viejo
-  (foreach routine-time routine-place [
-    [time place] ->
-    if time = current-time [
-      leave-container ([id] of self)
-      enter-container ([id] of self) (place)
-    ]
-  ])
 end
 
 to enter-container [ agent-id container-id ]
@@ -420,11 +435,33 @@ to update-infection
   ]
 end
 
+to set-public-place-cap
+  ls:let r public-place-capacity
+  ls:ask public-list [ set capacity ceiling (r * max-pxcor * max-pycor) ]
+end
+
 to-report cambiar-formato-hora [hora]
   let int-part int (hora / 4)
   let dec-part (hora / 4) - int-part
 
   report (int-part * 100) + (dec-part * 60)
+end
+
+to do-plots
+  if clock-h * 100 + clock-m = 0 [ daily-cases-plot ]
+end
+
+to daily-cases-plot
+  let new-total 0
+  foreach ls:models [
+    model -> set new-total new-total + [infection-counter] ls:of model
+  ]
+
+  set-current-plot "daily-cases"
+  ;set-current-plot-pen ""
+  plotxy days new-total - total-cases
+
+  set total-cases new-total
 end
 
 ;██████████▀▀▀▀▀▀▀▀▀▀▀▀▀██████████
@@ -445,8 +482,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-371
-162
+644
+435
 -1
 -1
 13.0
@@ -460,9 +497,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-10
+31
 0
-10
+31
 0
 0
 1
@@ -570,7 +607,7 @@ INPUTBOX
 214
 106
 n-agents
-100.0
+1000.0
 1
 0
 Number
@@ -593,10 +630,10 @@ NIL
 1
 
 BUTTON
-173
-325
-317
-358
+0
+295
+144
+328
 imrpime rutina
 ask people [ \nprint age\nprint routine-place \nprint routine-time\n]
 NIL
@@ -659,7 +696,7 @@ INPUTBOX
 215
 169
 num-public-places
-2.0
+50.0
 1
 0
 Number
@@ -670,15 +707,15 @@ INPUTBOX
 215
 231
 num-work-places
-3.0
+100.0
 1
 0
 Number
 
 SLIDER
-581
+743
 68
-776
+938
 101
 avg-incubation-period
 avg-incubation-period
@@ -691,9 +728,9 @@ Days
 HORIZONTAL
 
 SLIDER
-581
+743
 34
-758
+920
 67
 avg-recovery-time
 avg-recovery-time
@@ -706,9 +743,9 @@ Days
 HORIZONTAL
 
 TEXTBOX
-584
+746
 10
-734
+896
 28
 Infection Parameters
 14
@@ -721,15 +758,15 @@ INPUTBOX
 215
 292
 num-schools
-0.0
+5.0
 1
 0
 Number
 
 SLIDER
-581
+743
 102
-767
+929
 135
 base-transmition-chance
 base-transmition-chance
@@ -742,10 +779,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-0
-387
-172
-420
+483
+574
+655
+607
 chance-go-home
 chance-go-home
 0
@@ -757,25 +794,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-0
-420
-172
-453
+483
+607
+655
+640
 chance-go-out
 chance-go-out
 0
 1
-0.3
+0.2
 0.1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-0
-453
-172
-486
+483
+640
+655
+673
 chance-visit-friend
 chance-visit-friend
 0
@@ -787,12 +824,90 @@ NIL
 HORIZONTAL
 
 MONITOR
-218
-73
-275
-118
+98
+51
+155
+96
 NIL
 homes
+17
+1
+11
+
+PLOT
+667
+152
+922
+342
+daily-cases
+Days
+# cases
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" ""
+
+SLIDER
+0
+445
+250
+478
+public-place-capacity
+public-place-capacity
+0
+1
+0.004
+0.001
+1
+per m^2
+HORIZONTAL
+
+BUTTON
+0
+480
+117
+513
+NIL
+set-public-place-cap
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+122
+481
+207
+514
+reset-cap
+ls:ask public-list [ capacity -1 ] 
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+252
+464
+309
+509
+aforo
+[capacity] ls:of one-of public-list
 17
 1
 11
@@ -1139,7 +1254,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

@@ -1,5 +1,7 @@
 globals [
-
+  capacity ; aforo (ilimitado = -1)
+  infection-counter ; counts the number of people that have contracted the disease in this container
+  time
 ]
 
 breed [people person]
@@ -7,27 +9,25 @@ breed [people person]
 people-own [
   id
   state
-  time-infected ;<-------NUEVO
+  time-infected
 ]
 
 to setup
   resize-world 0 width 0 height
   clear-all
   set-default-shape turtles "circle"
+  set capacity -1
   draw-walls
-  ;create-turtles 5                      ;; create some turtles
-  ;  [ randomize ]                       ;; place them randomly
-
   reset-ticks
 end
 
 to go
-  update-infection ;<-------NUEVO
+  update-infection
   ask people [
     ;ifelse leave-trace?             ;; the turtle puts its pen up or down depending on the
-    ;  [ pen-down ]                  ;;   value of the LEAVE-TRACE? switch
+    ;  [ pen-down ]                  ;; value of the LEAVE-TRACE? switch
     ;  [ pen-up ]
-    color-agent ;<-------NUEVO
+    color-agent
     bounce
     fd movespeed
   ]
@@ -40,7 +40,7 @@ to insert-agent [ _id _state _time-infected]
     set id _id
     set label _id
     set state _state
-    set time-infected _time-infected ;<-------NUEVO
+    set time-infected _time-infected
     set xcor random max-pxcor
     set ycor random max-pycor
   ]
@@ -80,24 +80,27 @@ end
 
 to maybe-get-sick ;; turtle procedure
   ;; roll the dice and maybe get sick
-  if (state = 0) and (random-float 1 < infection-chance)
-    [ get-sick ]
+  if (state = 0) and (random-float 1 < infection-chance) [ get-sick ]
+  if (state = 2) and (random-float 1 < infection-chance * 0.3) [ get-sick ]
 end
 
 ;; set the appropriate variables to make this turtle sick
 to get-sick ;; turtle procedure
-  if state = 0 [ set state 1 ]
+  if state = 0 [
+    set state 1
+    set infection-counter infection-counter + 1
+  ]
 end
 
 to-report check-state-of-agent [ _id ]
   let s [state] of people with [ id = _id ]
-  ifelse ( empty? s ) [report -99] [
+  ifelse ( empty? s ) [ report -99 ] [
     ;print item 0 s
     report item 0 s
   ]
 end
 
-to-report check-time-infected-of-agent [ _id ] ;<-------NUEVO
+to-report check-time-infected-of-agent [ _id ]
   let t [time-infected] of people with [ id = _id ]
   ifelse ( empty? t ) [report -99] [
     ;print item 0 t
@@ -105,9 +108,14 @@ to-report check-time-infected-of-agent [ _id ] ;<-------NUEVO
   ]
 end
 
-to update-infection ;<-------NUEVO
+to-report is-open
+  if capacity = -1 [ report true ]
+  ifelse count people < capacity [ report true ] [ report false ]
+end
+
+to update-infection
   ask people [
-    if (state = 1 )[;infected
+    if (state = 1 )[ ;infected
       set time-infected time-infected + 1
     ]
 
@@ -118,16 +126,25 @@ to update-infection ;<-------NUEVO
   ]
 end
 
-to color-agent ;<-------NUEVO
-  if state = 0 [ set color 85 ]
-  if state = 1 [ set color 55 ]
-  if state = 2 [ set color 45 ]
+to infect-agent [ _id ]
+  ask people with [ id = _id ] [
+    if state != 1 [
+      set state 1
+      set infection-counter infection-counter + 1
+    ]
+  ]
+end
+
+to color-agent
+  if state = 0 [ set color 88 ]
+  if state = 1 [ set color 66 ]
+  if state = 2 [ set color 47 ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-141
+143
 10
-417
+419
 287
 -1
 -1
@@ -208,9 +225,9 @@ NIL
 1
 
 INPUTBOX
-3
+0
 118
-73
+70
 178
 movespeed
 1.0
@@ -220,9 +237,9 @@ Number
 
 SLIDER
 0
-183
+186
 140
-216
+219
 infection-chance
 infection-chance
 0
@@ -234,10 +251,10 @@ NIL
 HORIZONTAL
 
 INPUTBOX
-7
-221
-133
-281
+0
+226
+126
+286
 dias-para-recuperacion
 14.0
 1
