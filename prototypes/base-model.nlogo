@@ -26,7 +26,9 @@ globals [
 people-own [
   id
   state ;; healthy/infected/recovered/dead -> 0/1/2/3
-  age
+  vaccinated ;; true/false
+  ;age ; queremos cambiarlo por algo que recuerde la "categoria". (e.g., )
+  ocupation ;; student/worker/sloth -> 0/1/2
   routine-index
   routine-time
   routine-place
@@ -82,6 +84,8 @@ end
 
 to go
   update-infection
+  daily-events
+
   if (clock-m mod 15 = 0) [
     ask people [
       follow-routine
@@ -90,8 +94,14 @@ to go
   ]
   ls:ask ls:models [ go ]
   update-clock
-  do-plots
   tick
+end
+
+to daily-events
+  if clock-h * 100 + clock-m = 0 [
+    if vaccination-campaign [ vaccinate-people ]
+    do-plots
+  ]
 end
 
 to update-clock
@@ -111,6 +121,7 @@ to color-agent
   if state = 0 [ set color color-healthy ]
   if state = 1 [ set color color-infected ]
   if state = 2 [ set color color-recovered ]
+  if vaccinated [ set color color-vaccinated ]
 end
 
 
@@ -135,19 +146,31 @@ to create-homes
     set rand min (list rand counter) ; do not let rand be greater than the number of agents left to be created
 
     ask n-of rand (patches with [ (count people-here) = 0 ]) [
-      sprout-people 1 [
-        set id who
-        set state 0
-        set age 5 + abs (round random-normal 30 10)
-        set location last ls:models ; this agent's home is the last container created
-        set time-infected 0
-        set home-loc last ls:models
-        if (age >= 24) [set is-essential true]
-        color-agent
-      ]
+      sprout-people 1 [ hooman-settings ]
     ]
     set counter counter - rand
   ]
+end
+
+to hooman-settings
+  set id who
+  set state 0
+  set vaccinated false
+  ;set age 5 + abs (round random-normal 30 10)
+  let roll random-float 100
+  ; Population ocupation distribution: [0---students---a---workers---b---sloths---100]
+  let a percent-of-students
+  let b percent-of-students + percent-of-workers
+
+  if (roll < a) [ set ocupation 0 ]
+  if (roll >= a and roll < b) [ set ocupation 1 ]
+  if (roll >= b) [ set ocupation 2 ]
+
+  set location last ls:models ; this agent's home is the last container created
+  set time-infected 0
+  set home-loc last ls:models
+  if (ocupation = 1) [set is-essential true]
+  color-agent
 end
 
 to create-public-places
@@ -205,10 +228,12 @@ to container-settings [ w h recov-time speed infec-chance ]
   ls:assign last ls:models width w
   ls:assign last ls:models height h
   ls:assign last ls:models dias-para-recuperacion recov-time
+  ls:assign last ls:models vaccine-eff vaccine-effectiveness ;; this is a constant for all containers
   ifelse speed > 0
   [ ls:assign last ls:models movespeed speed ]
   [ ls:assign last ls:models movespeed 0 ]
   ls:assign last ls:models infection-chance infec-chance
+  ls:assign last ls:models recov-infec-mod recovered-infection-modifier
   ;ls:assign last ls:models dias de incahggoasfef askjfhaskjf
 end
 
@@ -261,9 +286,22 @@ to mark-essentials
   let contador 0
   ask people [
     set is-essential false
-    if (is-worker) [set contador contador + 1]
+    if (ocupation = 1) [set contador contador + 1]
   ]
-  ask n-of ceiling((percent-essentials / 100 ) * contador) people with [is-worker = true] [set is-essential true]
+  ask n-of ceiling(( percent-essentials / 100 ) * contador) people with [ocupation = 1] [ set is-essential true ]
+end
+
+to vaccinate-people ;; occurs once a day, at 00:00
+  if any? people [
+    ask up-to-n-of (count people * vaccination-rate) people with [ vaccinated = false ] [
+      set vaccinated true
+      ls:let _id id
+      if location != -1 [
+        ls:ask location [ vaccinate-agent _id ]
+      ]
+    ]
+  ]
+
 end
 
 to generate-routine
@@ -288,11 +326,11 @@ to generate-routine
 
   ; 9 hrs (36 ts) of work for adults, 7 hrs (28 ts) of school for students
   let work-time 0
-  if [age] of self <= 23 [
+  if [ocupation] of self = 0 [
     set work-time (floor random-normal 28 1.8)
     set free-time free-time - work-time
   ]
-  if [age] of self >= 24 and [age] of self <= 60 [
+  if [ocupation] of self = 1 [
     set work-time (floor random-normal 36 1.8)
     set free-time free-time - work-time
   ]
@@ -306,10 +344,10 @@ to generate-routine
   array:set arr-p random-index-close-to-the-start get-rand-work
   ;array:set arr-t 0 array:item arr-t (len - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
 
-  if [age] of self <= 23 [ ; students shall always go to school in the morning
+  if [ocupation] of self = 0 [ ; students shall always go to school in the morning
     array:set arr-p 0 get-rand-school
   ]
-  if [age] of self >= 24 and [age] of self <= 60 [ ; workers may have different schedules
+  if [ocupation] of self = 1 [ ; workers may have different schedules
     array:set arr-p random-index-close-to-the-start get-rand-work
   ]
 
@@ -350,33 +388,33 @@ to-report get-rand-public
 end
 
 to-report get-rand-work
-  report one-of work-list
+  ifelse num-work-places > 0 [ report one-of work-list ] [ report -1 ]
 end
 
 to-report get-rand-school
-  report one-of school-list
+  ifelse num-schools > 0 [ report one-of school-list ] [ report -1 ]
 end
 
-to follow-routine
+to follow-routine ; could use some improvements
   if (item routine-index routine-time) = current-time [
     ifelse (item routine-index routine-place) = -2 [ ; agent has free time
       if(quarantine)[
         leave-container ([id] of self)
         enter-container ([id] of self) (home-loc)
+        set routine-index (routine-index + 1) mod length routine-time
         stop
       ]
       let next-p 0
-      ; need to handle these chances in a better way
-      ifelse random-float 1 < 0.5 [ ; chance to go home
-        set next-p home-loc
-      ][
-        ifelse random-float 1 < 0.8 [ ; chance to go to a public place
-          set next-p get-rand-public
-          if [is-open] ls:of next-p = false [ set next-p home-loc ]
-        ][
-          set next-p get-rand-home ; chance to go to someone else's house
-        ]
+      let roll random-float 1 ; roll the dice
+      ; Activity preference: [0---go_home---a---go_out---b---visit_friend---1]
+      let a chance-go-home
+      let b chance-go-home + chance-go-out
+      if (roll < a) [ set next-p home-loc ]
+      if (roll >= a and roll < b) [
+        set next-p get-rand-public
+        if [is-open] ls:of next-p = false [ set next-p home-loc ]
       ]
+      if (roll >= b) [ set next-p get-rand-home ]
 
       if (location != next-p)[ ; only move the agent if the next place is different than current loc
         leave-container ([id] of self)
@@ -384,8 +422,8 @@ to follow-routine
       ]
     ][
       if (location != (item routine-index routine-place))[ ; only move the agent if the next place is different than current loc
-        if(is-student)[ ;estudiantes
-          ifelse (online-clases) [
+        if(ocupation = 0)[ ;estudiantes
+          ifelse (online-classes) [
             leave-container ([id] of self)
             enter-container ([id] of self) (home-loc)
           ][
@@ -393,7 +431,7 @@ to follow-routine
             enter-container ([id] of self) (item routine-index routine-place)
           ]
         ]
-        if(is-worker)[ ;trabajadores
+        if(ocupation = 1)[ ;trabajadores
           ifelse (is-essential) [
             leave-container ([id] of self)
             enter-container ([id] of self) (item routine-index routine-place)
@@ -402,34 +440,16 @@ to follow-routine
             enter-container ([id] of self) (home-loc)
           ]
         ]
-        ;abuelitos
-        leave-container ([id] of self)
-        enter-container ([id] of self) (item routine-index routine-place)
+        if (ocupation = 2) [ ;abuelitos
+          leave-container ([id] of self)
+          enter-container ([id] of self) (item routine-index routine-place)
+        ]
       ]
     ]
     set routine-index (routine-index + 1) mod length routine-time
   ]
 end
 
-to-report is-student
-   if [age] of self <= 23 [
-    report true
-  ]
-  if [age] of self >= 24 and [age] of self <= 60 [
-   report false
-  ]
-  report false
-end
-
-to-report is-worker
-   if [age] of self <= 23 [
-    report false
-  ]
-  if [age] of self >= 24 and [age] of self <= 60 [
-   report true
-  ]
-  report false
-end
 
 to seed-infection
   if any? people [
@@ -451,10 +471,11 @@ to enter-container [ agent-id container-id ]
 
   ls:let _id agent-id
   ls:let _state [state] of person agent-id
+  ls:let _vaccine [vaccinated] of person agent-id
   ls:let _time-infected [time-infected] of person agent-id
+
   ls:ask container-id [
-    ;let _state [state] of person agent-id
-    insert-agent _id _state _time-infected
+    insert-agent _id _state _vaccine _time-infected
   ]
   ask person agent-id [ set location container-id ]
 end
@@ -512,11 +533,9 @@ to-report cambiar-formato-hora [hora]
 end
 
 to do-plots
-  if clock-h * 100 + clock-m = 0 [
-    update-agent-state
-    daily-cases-plot
-    active-cases-plot
-  ]
+  update-agent-state
+  daily-cases-plot
+  active-cases-plot
 end
 
 to daily-cases-plot
@@ -556,8 +575,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-371
-162
+254
+45
 -1
 -1
 13.0
@@ -571,9 +590,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-10
+1
 0
-10
+1
 0
 0
 1
@@ -681,7 +700,7 @@ INPUTBOX
 214
 106
 n-agents
-100.0
+1.0
 1
 0
 Number
@@ -709,7 +728,7 @@ BUTTON
 144
 328
 imrpime rutina
-ask people [ \nprint age\nprint routine-place \nprint routine-time\n]
+ask people [ \nprint ocupation\nprint routine-place \nprint routine-time\n]
 NIL
 1
 T
@@ -727,15 +746,15 @@ SWITCH
 43
 show-containers
 show-containers
-1
+0
 1
 -1000
 
 INPUTBOX
-1
-573
-91
-633
+0
+797
+90
+857
 color-healthy
 88.0
 1
@@ -743,10 +762,10 @@ color-healthy
 Color
 
 INPUTBOX
-95
-573
-183
-633
+92
+797
+180
+857
 color-infected
 66.0
 1
@@ -754,10 +773,10 @@ color-infected
 Color
 
 INPUTBOX
-186
-573
-276
-633
+183
+797
+273
+857
 color-recovered
 47.0
 1
@@ -770,7 +789,7 @@ INPUTBOX
 215
 169
 num-public-places
-10.0
+1.0
 1
 0
 Number
@@ -781,7 +800,7 @@ INPUTBOX
 215
 231
 num-work-places
-10.0
+1.0
 1
 0
 Number
@@ -853,10 +872,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-483
-574
-655
-607
+0
+601
+172
+634
 chance-go-home
 chance-go-home
 0
@@ -868,30 +887,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-483
-607
-655
-640
+0
+634
+172
+667
 chance-go-out
 chance-go-out
 0
 1
-0.2
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-483
-640
-655
-673
-chance-visit-friend
-chance-visit-friend
-0
-1
-0.0
+0.4
 0.1
 1
 NIL
@@ -909,10 +913,10 @@ homes
 11
 
 PLOT
-738
-180
-993
-370
+221
+359
+476
+549
 daily-cases
 Days
 # cases
@@ -927,25 +931,25 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 SLIDER
-0
-445
-250
-478
+745
+429
+995
+462
 public-place-capacity
 public-place-capacity
 0
 1
-0.005
+0.007
 0.001
 1
 per m^2
 HORIZONTAL
 
 BUTTON
-0
-480
-117
-513
+745
+464
+862
+497
 NIL
 set-public-place-cap
 NIL
@@ -959,10 +963,10 @@ NIL
 1
 
 BUTTON
-122
-481
-207
-514
+867
+465
+952
+498
 reset-cap
 ls:ask public-list [ capacity -1 ] 
 NIL
@@ -976,10 +980,10 @@ NIL
 1
 
 MONITOR
-252
-464
-309
-509
+1004
+451
+1061
+496
 aforo
 [capacity] ls:of one-of public-list
 17
@@ -987,36 +991,36 @@ aforo
 11
 
 SWITCH
-26
-334
-177
-367
-online-clases
-online-clases
-0
+748
+308
+880
+341
+online-classes
+online-classes
+1
 1
 -1000
 
 SLIDER
-2
-368
-211
-401
+748
+354
+957
+387
 percent-essentials
 percent-essentials
 0
 100
-50.0
+0.0
 1
 1
 %
 HORIZONTAL
 
 BUTTON
-29
-406
-175
-439
+782
+387
+928
+420
 NIL
 mark-essentials
 NIL
@@ -1030,10 +1034,10 @@ NIL
 1
 
 SWITCH
-668
-347
-804
-380
+1008
+306
+1109
+339
 quarantine
 quarantine
 0
@@ -1041,10 +1045,10 @@ quarantine
 -1000
 
 PLOT
-925
-152
-1177
-342
+480
+360
+732
+550
 active-cases
 Days
 # cases
@@ -1059,35 +1063,177 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 MONITOR
-667
-383
-752
-428
+1007
+342
+1092
+387
 estudiantes
-count people with [age <= 23]
+count people with [ocupation = 0]
 17
 1
 11
 
 MONITOR
-755
-383
-843
-428
+1095
+342
+1183
+387
 trabajadores
-count people with [age >= 24]
+count people with [ocupation = 1]
 17
 1
 11
 
 MONITOR
-799
-429
-876
-474
+1094
+388
+1171
+433
 esenciales
 count people with [is-essential = true]
 17
+1
+11
+
+SWITCH
+1115
+468
+1289
+501
+vaccination-campaign
+vaccination-campaign
+1
+1
+-1000
+
+SLIDER
+1114
+433
+1286
+466
+vaccination-rate
+vaccination-rate
+0
+1
+0.065
+0.005
+1
+NIL
+HORIZONTAL
+
+INPUTBOX
+0
+858
+95
+918
+color-vaccinated
+126.0
+1
+0
+Color
+
+SLIDER
+744
+137
+916
+170
+vaccine-effectiveness
+vaccine-effectiveness
+0
+1
+0.93
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+931
+102
+1142
+135
+recovered-infection-modifier
+recovered-infection-modifier
+0
+1
+0.36
+0.01
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+703
+82
+748
+100
+unused\n
+11
+0.0
+1
+
+TEXTBOX
+753
+282
+903
+300
+Containment Measures
+14
+0.0
+1
+
+INPUTBOX
+0
+424
+104
+484
+percent-of-students
+0.0
+1
+0
+Number
+
+INPUTBOX
+0
+485
+105
+545
+percent-of-workers
+100.0
+1
+0
+Number
+
+MONITOR
+0
+545
+105
+590
+Sloths
+100 - percent-of-students - percent-of-workers
+3
+1
+11
+
+MONITOR
+1185
+342
+1259
+387
+flojos
+count people with [ocupation = 2]
+17
+1
+11
+
+MONITOR
+1
+669
+172
+714
+chance-visit-friend
+1 - chance-go-home - chance-go-out
+3
 1
 11
 
@@ -1433,7 +1579,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.2.1
+NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

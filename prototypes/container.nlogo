@@ -9,6 +9,7 @@ breed [people person]
 people-own [
   id
   state
+  vaccinated
   time-infected
 ]
 
@@ -35,11 +36,12 @@ to go
   tick
 end
 
-to insert-agent [ _id _state _time-infected]
+to insert-agent [ _id _state _vaccine _time-infected ]
   create-people 1 [
     set id _id
     set label _id
     set state _state
+    set vaccinated _vaccine
     set time-infected _time-infected
     set xcor random max-pxcor
     set ycor random max-pycor
@@ -80,8 +82,9 @@ end
 
 to maybe-get-sick ;; turtle procedure
   ;; roll the dice and maybe get sick
+  if vaccinated and (random-float 1 < vaccine-eff) [ stop ]
   if (state = 0) and (random-float 1 < infection-chance) [ get-sick ]
-  if (state = 2) and (random-float 1 < infection-chance * 0.3) [ get-sick ]
+  if (state = 2) and (random-float 1 < infection-chance * recov-infec-mod) [ get-sick ]
 end
 
 ;; set the appropriate variables to make this turtle sick
@@ -135,16 +138,23 @@ to infect-agent [ _id ]
   ]
 end
 
+to vaccinate-agent [ _id ]
+  ask people with [ id = _id ] [
+    if not vaccinated [ set vaccinated true ]
+  ]
+end
+
 to color-agent
   if state = 0 [ set color 88 ]
   if state = 1 [ set color 66 ]
   if state = 2 [ set color 47 ]
+  if vaccinated [ set color 126 ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-143
+176
 10
-419
+452
 287
 -1
 -1
@@ -237,9 +247,9 @@ Number
 
 SLIDER
 0
-186
+184
 140
-219
+217
 infection-chance
 infection-chance
 0
@@ -252,14 +262,44 @@ HORIZONTAL
 
 INPUTBOX
 0
-226
+218
 126
-286
+278
 dias-para-recuperacion
 14.0
 1
 0
 Number
+
+SLIDER
+0
+281
+172
+314
+vaccine-eff
+vaccine-eff
+0
+1
+0.0
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+316
+172
+349
+recov-infec-mod
+recov-infec-mod
+0
+1
+0.3
+0.01
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
