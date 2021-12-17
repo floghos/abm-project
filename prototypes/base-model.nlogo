@@ -28,7 +28,7 @@ people-own [
   state ;; healthy/infected/recovered/dead -> 0/1/2/3
   vaccinated ;; true/false
   ;age ; queremos cambiarlo por algo que recuerde la "categoria". (e.g., )
-  ocupation ;; student/worker/sloth -> 0/1/2
+  occupation ;; student/worker/sloth -> 0/1/2
   routine-index
   routine-time
   routine-place
@@ -158,18 +158,18 @@ to hooman-settings
   set vaccinated false
   ;set age 5 + abs (round random-normal 30 10)
   let roll random-float 100
-  ; Population ocupation distribution: [0---students---a---workers---b---sloths---100]
+  ; Population occupation distribution: [0---students---a---workers---b---sloths---100]
   let a percent-of-students
   let b percent-of-students + percent-of-workers
 
-  if (roll < a) [ set ocupation 0 ]
-  if (roll >= a and roll < b) [ set ocupation 1 ]
-  if (roll >= b) [ set ocupation 2 ]
+  if (roll < a) [ set occupation 0 ]
+  if (roll >= a and roll < b) [ set occupation 1 ]
+  if (roll >= b) [ set occupation 2 ]
 
   set location last ls:models ; this agent's home is the last container created
   set time-infected 0
   set home-loc last ls:models
-  if (ocupation = 1) [set is-essential true]
+  if (occupation = 1) [set is-essential true]
   color-agent
 end
 
@@ -286,9 +286,9 @@ to mark-essentials
   let contador 0
   ask people [
     set is-essential false
-    if (ocupation = 1) [set contador contador + 1]
+    if (occupation = 1) [set contador contador + 1]
   ]
-  ask n-of ceiling(( percent-essentials / 100 ) * contador) people with [ocupation = 1] [ set is-essential true ]
+  ask n-of ceiling(( percent-essentials / 100 ) * contador) people with [occupation = 1] [ set is-essential true ]
 end
 
 to vaccinate-people ;; occurs once a day, at 00:00
@@ -326,11 +326,11 @@ to generate-routine
 
   ; 9 hrs (36 ts) of work for adults, 7 hrs (28 ts) of school for students
   let work-time 0
-  if [ocupation] of self = 0 [
+  if [occupation] of self = 0 [
     set work-time (floor random-normal 28 1.8)
     set free-time free-time - work-time
   ]
-  if [ocupation] of self = 1 [
+  if [occupation] of self = 1 [
     set work-time (floor random-normal 36 1.8)
     set free-time free-time - work-time
   ]
@@ -344,10 +344,10 @@ to generate-routine
   array:set arr-p random-index-close-to-the-start get-rand-work
   ;array:set arr-t 0 array:item arr-t (len - 1) + home-time mod 96 ; esto calcula la hora en la que el agente se iría a trabajar
 
-  if [ocupation] of self = 0 [ ; students shall always go to school in the morning
+  if [occupation] of self = 0 [ ; students shall always go to school in the morning
     array:set arr-p 0 get-rand-school
   ]
-  if [ocupation] of self = 1 [ ; workers may have different schedules
+  if [occupation] of self = 1 [ ; workers may have different schedules
     array:set arr-p random-index-close-to-the-start get-rand-work
   ]
 
@@ -422,7 +422,7 @@ to follow-routine ; could use some improvements
       ]
     ][
       if (location != (item routine-index routine-place))[ ; only move the agent if the next place is different than current loc
-        if(ocupation = 0)[ ;estudiantes
+        if(occupation = 0)[ ;estudiantes
           ifelse (online-classes) [
             leave-container ([id] of self)
             enter-container ([id] of self) (home-loc)
@@ -431,7 +431,7 @@ to follow-routine ; could use some improvements
             enter-container ([id] of self) (item routine-index routine-place)
           ]
         ]
-        if(ocupation = 1)[ ;trabajadores
+        if(occupation = 1)[ ;trabajadores
           ifelse (is-essential) [
             leave-container ([id] of self)
             enter-container ([id] of self) (item routine-index routine-place)
@@ -440,7 +440,7 @@ to follow-routine ; could use some improvements
             enter-container ([id] of self) (home-loc)
           ]
         ]
-        if (ocupation = 2) [ ;abuelitos
+        if (occupation = 2) [ ;abuelitos
           leave-container ([id] of self)
           enter-container ([id] of self) (item routine-index routine-place)
         ]
@@ -728,7 +728,7 @@ BUTTON
 144
 328
 imrpime rutina
-ask people [ \nprint ocupation\nprint routine-place \nprint routine-time\n]
+ask people [ \nprint occupation\nprint routine-place \nprint routine-time\n]
 NIL
 1
 T
@@ -1068,7 +1068,7 @@ MONITOR
 1092
 387
 estudiantes
-count people with [ocupation = 0]
+count people with [occupation = 0]
 17
 1
 11
@@ -1079,7 +1079,7 @@ MONITOR
 1183
 387
 trabajadores
-count people with [ocupation = 1]
+count people with [occupation = 1]
 17
 1
 11
@@ -1221,7 +1221,7 @@ MONITOR
 1259
 387
 flojos
-count people with [ocupation = 2]
+count people with [occupation = 2]
 17
 1
 11
