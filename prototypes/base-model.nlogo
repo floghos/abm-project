@@ -575,8 +575,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-254
-45
+280
+71
 -1
 -1
 13.0
@@ -590,9 +590,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
+3
 0
-1
+3
 0
 0
 1
@@ -700,7 +700,7 @@ INPUTBOX
 214
 106
 n-agents
-1.0
+10.0
 1
 0
 Number
@@ -746,7 +746,7 @@ SWITCH
 43
 show-containers
 show-containers
-0
+1
 1
 -1000
 
@@ -1040,7 +1040,7 @@ SWITCH
 339
 quarantine
 quarantine
-0
+1
 1
 -1000
 
@@ -1188,7 +1188,7 @@ INPUTBOX
 104
 484
 percent-of-students
-0.0
+33.72
 1
 0
 Number
@@ -1199,7 +1199,7 @@ INPUTBOX
 105
 545
 percent-of-workers
-100.0
+54.22
 1
 0
 Number
@@ -1236,6 +1236,36 @@ chance-visit-friend
 3
 1
 11
+
+TEXTBOX
+117
+456
+157
+474
+33.72%
+11
+0.0
+1
+
+TEXTBOX
+116
+516
+166
+534
+54.22%
+11
+0.0
+1
+
+TEXTBOX
+113
+424
+208
+467
+Values for Chile (2019)
+11
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
