@@ -1115,7 +1115,7 @@ vaccination-rate
 vaccination-rate
 0
 1
-0.065
+0.06
 0.005
 1
 NIL
@@ -1156,7 +1156,7 @@ recovered-infection-modifier
 recovered-infection-modifier
 0
 1
-0.7
+0.33
 0.01
 1
 NIL
