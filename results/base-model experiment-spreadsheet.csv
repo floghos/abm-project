@@ -1,0 +1,39 @@
+"BehaviorSpace results (NetLogo 6.2.0)"
+"base-model.nlogo"
+"experiment"
+"12/22/2021 02:31:58:784 -0300"
+"min-pxcor","max-pxcor","min-pycor","max-pycor"
+"0","44","0","44"
+"[run number]"
+"color-vaccinated",
+"percent-of-workers",
+"avg-incubation-period",
+"vaccine-effectiveness",
+"avg-recovery-time",
+"vaccination-rate",
+"n-agents",
+"public-place-capacity",
+"quarantine",
+"color-recovered",
+"recovered-infection-modifier",
+"chance-go-out",
+"num-public-places",
+"num-work-places",
+"vaccination-campaign",
+"color-healthy",
+"online-classes",
+"chance-go-home",
+"base-transmition-chance",
+"show-containers",
+"percent-of-students",
+"color-infected",
+"percent-essentials",
+"num-schools",
+"[reporter]"
+"[final]",
+"[min]",
+"[max]",
+"[mean]",
+"[steps]",
+
+"[all run data]"

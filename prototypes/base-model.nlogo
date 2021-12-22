@@ -27,15 +27,12 @@ people-own [
   id
   state ;; healthy/infected/recovered/dead -> 0/1/2/3
   vaccinated ;; true/false
-  ;age ; queremos cambiarlo por algo que recuerde la "categoria". (e.g., )
   occupation ;; student/worker/sloth -> 0/1/2
   routine-index
   routine-time
   routine-place
-  ;routine-horas [ 0800 0815 1730 1745 1900 1930 ]
-  ;rutina-lugares [ limbo trabajo limbo libre limbo casa]
   location ;; id of the container the agent is currently on. -1 means limbo
-  home-loc
+  home-loc ;; id of the agent's home container
   time-infected ;; days since the agent got infected
   is-essential
 ]
@@ -79,7 +76,12 @@ to setup
   ask people [ set location -1 ]
   ls:ask ls:models [ setup ]
   reset-ticks
+  seed-infection ;for running headless BehaviourSpace experiment
   do-plots
+end
+
+to behaviourspace-go
+  repeat 1440 [ go ]
 end
 
 to go
@@ -1096,10 +1098,10 @@ count people with [is-essential = true]
 11
 
 SWITCH
-1192
-473
-1366
-506
+1185
+496
+1359
+529
 vaccination-campaign
 vaccination-campaign
 1
@@ -1107,10 +1109,10 @@ vaccination-campaign
 -1000
 
 SLIDER
-1191
-438
-1363
-471
+1184
+461
+1356
+494
 vaccination-rate
 vaccination-rate
 0
@@ -1263,6 +1265,36 @@ TEXTBOX
 208
 467
 Values for Chile (2019)
+11
+0.0
+1
+
+TEXTBOX
+6
+406
+156
+424
+Used only during setup
+11
+0.0
+1
+
+TEXTBOX
+964
+12
+1087
+30
+(used only during setup)
+11
+0.0
+1
+
+TEXTBOX
+987
+289
+1154
+307
+(can be modified mid-simulation)
 11
 0.0
 1
@@ -1613,6 +1645,86 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="7day-experiment" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>behaviourspace-go</go>
+    <timeLimit steps="7"/>
+    <metric>count people with [state = 1]</metric>
+    <enumeratedValueSet variable="color-vaccinated">
+      <value value="126"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="percent-of-workers">
+      <value value="54.22"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="avg-incubation-period">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccine-effectiveness">
+      <value value="0.93"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="avg-recovery-time">
+      <value value="14"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-rate">
+      <value value="0.06"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="n-agents">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="public-place-capacity">
+      <value value="0.007"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="quarantine">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color-recovered">
+      <value value="47"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="recovered-infection-modifier">
+      <value value="0.33"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="chance-go-out">
+      <value value="0.4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-public-places">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-work-places">
+      <value value="110"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="vaccination-campaign">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color-healthy">
+      <value value="88"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="online-classes">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="chance-go-home">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="base-transmition-chance">
+      <value value="0.01"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="show-containers">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="percent-of-students">
+      <value value="33.72"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="color-infected">
+      <value value="66"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="percent-essentials">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="num-schools">
+      <value value="3"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
