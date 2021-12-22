@@ -185,7 +185,7 @@ to create-public-places
 
     ;; public spaces will be large with shorter interactions
     ;; container-settings width height recovery-time speed transmition-chance
-    container-settings 40 40 avg-recovery-time (random-normal 1 0.15) base-transmition-chance
+    container-settings 90 90 avg-recovery-time (random-normal 1 0.15) base-transmition-chance
     set counter counter - 1
   ]
 end
@@ -575,8 +575,8 @@ end
 GRAPHICS-WINDOW
 220
 10
-280
-71
+813
+604
 -1
 -1
 13.0
@@ -590,9 +590,9 @@ GRAPHICS-WINDOW
 1
 1
 0
-3
+44
 0
-3
+44
 0
 0
 1
@@ -658,7 +658,7 @@ clock-m
 BUTTON
 0
 137
-63
+60
 170
 go
 go
@@ -700,7 +700,7 @@ INPUTBOX
 214
 106
 n-agents
-10.0
+2000.0
 1
 0
 Number
@@ -723,10 +723,10 @@ NIL
 1
 
 BUTTON
-0
-295
-144
-328
+185
+647
+329
+680
 imrpime rutina
 ask people [ \nprint occupation\nprint routine-place \nprint routine-time\n]
 NIL
@@ -789,7 +789,7 @@ INPUTBOX
 215
 169
 num-public-places
-1.0
+10.0
 1
 0
 Number
@@ -800,15 +800,15 @@ INPUTBOX
 215
 231
 num-work-places
-1.0
+110.0
 1
 0
 Number
 
 SLIDER
-743
+828
 68
-938
+1023
 101
 avg-incubation-period
 avg-incubation-period
@@ -821,9 +821,9 @@ Days
 HORIZONTAL
 
 SLIDER
-743
+828
 34
-920
+1005
 67
 avg-recovery-time
 avg-recovery-time
@@ -836,9 +836,9 @@ Days
 HORIZONTAL
 
 TEXTBOX
-746
+831
 10
-896
+964
 28
 Infection Parameters
 14
@@ -851,22 +851,22 @@ INPUTBOX
 215
 292
 num-schools
-1.0
+3.0
 1
 0
 Number
 
 SLIDER
-743
+828
 102
-929
+1014
 135
 base-transmition-chance
 base-transmition-chance
 0
 1
-0.12
 0.01
+0.001
 1
 NIL
 HORIZONTAL
@@ -931,10 +931,10 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 SLIDER
-745
-429
-995
-462
+822
+452
+1072
+485
 public-place-capacity
 public-place-capacity
 0
@@ -946,10 +946,10 @@ per m^2
 HORIZONTAL
 
 BUTTON
-745
-464
-862
-497
+822
+487
+939
+520
 NIL
 set-public-place-cap
 NIL
@@ -963,10 +963,10 @@ NIL
 1
 
 BUTTON
-867
-465
-952
-498
+944
+488
+1029
+521
 reset-cap
 ls:ask public-list [ capacity -1 ] 
 NIL
@@ -980,10 +980,10 @@ NIL
 1
 
 MONITOR
-1004
-451
-1061
-496
+1081
+474
+1138
+519
 aforo
 [capacity] ls:of one-of public-list
 17
@@ -991,10 +991,10 @@ aforo
 11
 
 SWITCH
-748
-308
-880
-341
+825
+313
+957
+346
 online-classes
 online-classes
 1
@@ -1002,25 +1002,25 @@ online-classes
 -1000
 
 SLIDER
-748
-354
-957
-387
+825
+359
+1034
+392
 percent-essentials
 percent-essentials
 0
 100
-0.0
+100.0
 1
 1
 %
 HORIZONTAL
 
 BUTTON
-782
-387
-928
-420
+859
+392
+1005
+425
 NIL
 mark-essentials
 NIL
@@ -1034,10 +1034,10 @@ NIL
 1
 
 SWITCH
-1008
-306
-1109
-339
+1085
+311
+1186
+344
 quarantine
 quarantine
 1
@@ -1063,10 +1063,10 @@ PENS
 "default" 1.0 0 -16777216 true "" ""
 
 MONITOR
-1007
-342
-1092
-387
+1084
+347
+1169
+392
 estudiantes
 count people with [occupation = 0]
 17
@@ -1074,10 +1074,10 @@ count people with [occupation = 0]
 11
 
 MONITOR
-1095
-342
-1183
-387
+1172
+347
+1260
+392
 trabajadores
 count people with [occupation = 1]
 17
@@ -1085,10 +1085,10 @@ count people with [occupation = 1]
 11
 
 MONITOR
-1094
-388
 1171
-433
+393
+1248
+438
 esenciales
 count people with [is-essential = true]
 17
@@ -1096,10 +1096,10 @@ count people with [is-essential = true]
 11
 
 SWITCH
-1115
-468
-1289
-501
+1192
+473
+1366
+506
 vaccination-campaign
 vaccination-campaign
 1
@@ -1107,10 +1107,10 @@ vaccination-campaign
 -1000
 
 SLIDER
-1114
-433
-1286
-466
+1191
+438
+1363
+471
 vaccination-rate
 vaccination-rate
 0
@@ -1133,9 +1133,9 @@ color-vaccinated
 Color
 
 SLIDER
-744
+829
 137
-916
+1001
 170
 vaccine-effectiveness
 vaccine-effectiveness
@@ -1148,35 +1148,35 @@ NIL
 HORIZONTAL
 
 SLIDER
-931
-102
-1142
-135
+1023
+104
+1234
+137
 recovered-infection-modifier
 recovered-infection-modifier
 0
 1
-0.36
+0.7
 0.01
 1
 NIL
 HORIZONTAL
 
 TEXTBOX
-703
-82
-748
-100
+1028
+77
+1073
+95
 unused\n
 11
 0.0
 1
 
 TEXTBOX
-753
-282
-903
-300
+830
+287
+980
+305
 Containment Measures
 14
 0.0
@@ -1216,10 +1216,10 @@ Sloths
 11
 
 MONITOR
-1185
-342
-1259
-387
+1262
+347
+1336
+392
 flojos
 count people with [occupation = 2]
 17
