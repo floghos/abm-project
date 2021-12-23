@@ -56,8 +56,8 @@ to setup
   ;; Our convention is: Homes -> Public places -> Work places -> Schools
   create-homes
   create-public-places
-  create-work-places ; WIP work in progress
-  create-schools ; WIP
+  create-work-places
+  create-schools
 
   set home-list n-values homes [ i -> i ]
   set public-list n-values public-places [ i -> i + homes]
@@ -187,7 +187,7 @@ to create-public-places
 
     ;; public spaces will be large with shorter interactions
     ;; container-settings width height recovery-time speed transmition-chance
-    container-settings 90 90 avg-recovery-time (random-normal 1 0.15) base-transmition-chance
+    container-settings 40 40 avg-recovery-time (random-normal 1 0.15) base-transmition-chance
     set counter counter - 1
   ]
 end
@@ -702,7 +702,7 @@ INPUTBOX
 214
 106
 n-agents
-2000.0
+2283.0
 1
 0
 Number
@@ -1300,41 +1300,94 @@ TEXTBOX
 1
 
 @#$#@#$#@
-## WHAT IS IT?
+## QUE ES ESTO
 
-(a general understanding of what the model is trying to show or explain)
+Este es una simula una enfermadad epidemica, ademas de algunas posibles medidas de contención para esta, con el proposito de estudiar cual o cuales son las más efectivas y bajo que condiciones.
 
-## HOW IT WORKS
+## COMO FUNCIONA
 
-(what rules the agents use to create the overall behavior of the model)
+Todos los agentes (personas) tienen una rutina diaria generada aleatoriamente (intentando seguir una rutina relativamente natural) que los lleva a visitar distintas ubicaciones durante el día. Los agentes pueden contagiar a otros agentes que se encuentren en el mismo parche que ellos, con una cierta probabilidad definida por `base-transmition-chance`.
+Modelamos el ambiente como un conjunto de "containers" creados con LevelSpace. El codigo de estos containers esta en el archivo `container.nlogo`. Estos representan distintos espacios en los que se desenvuelven los agentes, tales como sus hogares, lugares de trabajo o estudio y lugares públicos. Estos espacios se diferencian entre si principalmente por su tamaño y la duración de los encuentros entre los agentes.
 
-## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+## COMO USARLO
 
-## THINGS TO NOTICE
+Configura los *parametros del ambiente, agentes e infección* antes de hacer el setup inicial. Si quieres probar con otras configuraciones has de reiniciar la simulación con `setup`.
+Las *medidas de contención*, por otro lado, si pueden activarse en cualquier momento de la simulación.
 
-(suggested things for the user to notice while running the model)
+**Parametros del ambiente y agentes**
 
-## THINGS TO TRY
+* Show-containers permite mostrar los sub-modelos creados por LevelSpace, que representan los containers. Equivale a crearlos con `ls:create-interactive-models` en vez de `ls:create-models`.
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+* n-agents define la cantidad de agentes que usará la simulación. Los hogares se crean en función de esto, donde un hogar puede tener entre 1 y 4 agentes.
 
-## EXTENDING THE MODEL
+* num-public-spaces, num-work-spaces, num-schools define la cantidad de espacios publicos, lugares de trabajo y colegios entre los cuales se moveran los agentes.
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+* percent-of-students y percent-of-workers define cómo se distribuirán las ocupaciones de los agentes. Lo que reste después de estos 2 definirá el porcentaje de la población sin trabajo ni estudios (zanganos/jubilados/flojos/sloths)
+
+* chance-go-home y chance-go-out definen las preferencias de los agentes para ocupar su tiempo libre, en otras palabras, la opcion de quedarse en casa, la opcion de visitar algun lugar publico, o ir a la casa de otro agente.
+
+
+**Parametros de la infección**
+
+* avg-recovery-time representa el tiempo que tarda un agente infectado en recuperarse. Actualmente este tiempo será siempre el mismo para todos los agentes.
+
+* avg-incubation-period representa el tiempo que tarda un agente en presentar sintomas y comenzar a esparcir la enfermedad. Actualmente esta funcionalidad no está implementada.
+
+* base-transmition-chance es la probabilidad que tiene un agente enfermo de contagiar a un agente sano.
+
+* recovered-infection-modifier representa el grado de inmunidad que tiene un agente que se ha recuperado de la enfermedad. Este tendra solo una fraccion de la probabilidad base de infección de un agente sano.
+
+* vaccine-effectiveness es el grado de inmunidad que ofrece la vacuna. Un agente vacunado tendra una fraccion de la probabilida base de contagio.
+
+
+**Medidas de Contención**
+
+* online-classes Representa la implementacion de clases online para estudiantes. Si esta activa, todos los estudiantes se quedarán en casa durante su horario de estudio.
+
+* percent-essentials es el porcentaje de la poblacion trabajadora que se considera esencial. por defecto todos los trabajadores son esenciales. Puedes definir un porcentaje y aplicarlo con `mark-essentials`. Al hacer esto, aquellos trabajadores marcado como no esenciales se quedaran en casa durante su horario de trabajo.
+
+* public-place-capacity Representa la limitación de aforos en espacios publicos. Por defecto estos no tienen limite (definido como -1). Selecciona el limite deseado con el slider y aplicalo con `set-public-place-cap`. Remueve la limitacion de aforo con `reset-cap`.
+
+* quarantine activa o desactiva cuarentenas totales. Los agentes no podran ir a lugares publicos.
+
+* vaccination-campaign Es la implementación de una campaña de vacunación, donde cada dia se vacunará un porcentaje de la poblacion total, definido por `vaccination-rate`
+
+
+## IDEAS PARA EXPERIMENTAR
+
+Prueba buscando alguna configuracion que permita que la enfermedad perdure en el tiempo, pero que no mantenga a toda la poblacion infectada constantemente. O que solo un cierto porcentaje de la población se mantenga infectada.
+
+
+## EXTENDIENDO EL MODELO
+
+Sugerimos intentar modelar e implemantar nuevas medidas de contención, como por ejemplo el uso de mascarillas, residencias sanitarias, cuarentenas para agentes infectados, etc.
+También se podria modelar la idea de que no todos las personas siguen las medidas de contención impuestas por los gobiernos, o campañas de vacunación que consideren demográficas de prioridad.
+Otra interesante extensión es modelar la ventilación de los "contenedores", lo que ofrece una buena oportunidad para experimentar con SDMs.
 
 ## NETLOGO FEATURES
 
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+Hace extenso uso de **LevelSpace** para el manejo de los "contenedores".
+Incluye un simple experimento de **BehaviorSpace**.
 
 ## RELATED MODELS
 
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+**Librería de NetLogo:**
 
-## CREDITS AND REFERENCES
+* Disease Solo
+* Bacterial Infection
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+**Modelo externo:**
+
+* https://github.com/JTHooker/COVIDModel
+
+## CREDITOS Y REFERENCIAS
+
+El siguiente paper fue utilizado como referencia para este trabajo:
+https://www.medrxiv.org/content/10.1101/2021.01.11.21249630v2
+
+Hecho por: Javiera Cerda y Pablo Furet
+Bajo la guía de: Pedro Pinacho
 @#$#@#$#@
 default
 true
